@@ -1,0 +1,136 @@
+# Lacquer plan
+
+Desktop look customiser for Hyprland (and Noctalia when present). Sibling of
+Shellac, but Lacquer never styles terminals or individual apps: it covers
+"everything else". Private repo until it works; standalone now, may merge into
+hypr-dashboard later.
+
+## Decisions (owner, 2026-11-13)
+
+- **Core first, GUI on top.** One declarative theme file (TOML) is the source of
+  truth. A CLI (`lacquer`) with JSON output does get / set / preview / keep /
+  revert / apply / snapshot. The GTK4/libadwaita GUI (Python, same stack as
+  hypr-dashboard) is a thin front-end over the same core.
+- **Areas:** Hyprland look, Noctalia theme, system palette, GTK/Qt + icons +
+  cursor + fonts, wallpaper. Each area is a module. Modules for things that
+  are not installed hide themselves ("only when applicable").
+- **Palette works with and without Noctalia.** `palette.engine = "noctalia" | "lacquer"`.
+  Exactly one writer per target: in `lacquer` mode, Noctalia templates for the
+  targets Lacquer writes are turned off, or the two fight. Lacquer never
+  touches Noctalia's kitty/alacritty/btop templates (terminals/apps are out of
+  scope; Shellac can read the palette).
+- **Apply flow:** live preview, manual Keep / Revert. Only risky settings (list
+  below) get a 15 s auto-revert timer. A fixed keybind runs `lacquer revert`
+  blind.
+- **Themes:** one whole-look file per theme, made of self-contained sections
+  (`[palette]`, `[windows]`, `[bar]`, `[toolkit]`, `[cursor]`, `[fonts]`,
+  `[wallpaper]`). "Take the palette from theme X" = copy one section.
+- **Name:** Lacquer, `~/claude/lacquer`, CLI `lacquer`.
+
+## Risky settings (auto-revert timer)
+
+Ones that can leave you unable to see or click Revert:
+
+- `decoration:screen_shader` (can black out the screen)
+- `decoration:active_opacity` / `inactive_opacity` / `fullscreen_opacity` near 0
+- `decoration:dim_strength` near 1 with dim on
+- cursor theme missing/broken, cursor size very small or 0
+- GTK font size tiny or huge, broken GTK theme (the GUI's own dialog)
+- animation speeds so slow the desktop is unusable
+- heavy blur/shadow (`blur:passes`, `blur:size`, shadow range): iGPU hang history
+
+Ugly-but-usable settings (colors, gaps, rounding, borders, wallpaper, bar) have
+no timer. A Hyprland crash during a preview reverts by itself, because a
+preview never writes the saved config.
+
+## Facts probed (2026-11-13)
+
+- Hyprland 0.57.1 (held), Lua config. `hyprctl keyword` is gone ("unknown
+  request"). Live set: `hyprctl eval 'hl.config({general={gaps_in=6}})'` works.
+  `hyprctl reload` re-runs the saved Lua and undoes it (tested, gaps back to 1).
+- Hyprland accepts out-of-range values: Lacquer validates type/min/max itself
+  from `hyprctl descriptions -j` + `getoption` (socket code reused from
+  hypr-dashboard `hypr.py`, credited).
+- `hyprland.lua` order: config.* ... `require("noctalia").apply_theme()` ...
+  `require("config.dashboard_options")` last.
+- Noctalia config is `~/.config/noctalia/config.toml`; `[theme]` has
+  `mode`, `source = "wallpaper"`, `wallpaper_scheme`, `templates.builtin_ids`.
+  Custom palettes in `~/.config/noctalia/palettes/`. `noctalia msg` has
+  `config-get/config-set/config-reload`, `color-scheme-get/set`,
+  `theme-mode-get/set`, `templates-apply`, `wallpaper-get/set`. These persist
+  immediately (no live-only mode).
+- Installed: gsettings, nwg-look, qt6ct. Not installed: matugen, wallust, pywal.
+
+## Design
+
+### Module interface
+
+Each theme section maps 1:1 to a module with:
+
+- `detect()`: is the target installed? (hides the module if not)
+- `schema()`: keys, types, ranges, which keys are risky
+- `read()`: current saved values
+- `preview(values)`: show live
+- `keep()`: write to saved config
+- `revert()`: restore what was there before the preview
+
+Adding an area = adding one module file. No other code changes.
+
+### Preview / revert per target
+
+- **Hyprland:** preview = `hyprctl eval`; revert = `hyprctl reload`; keep =
+  write `~/.config/hypr/config/lacquer.lua`.
+- **Persistent targets** (gsettings, Noctalia `config-set`, wallpaper): before
+  a preview, save old values to `$XDG_RUNTIME_DIR/lacquer/preview.json`;
+  revert restores from that file. The file survives a GUI crash, so
+  `lacquer revert` still works.
+- **Cursor:** preview with `hyprctl setcursor`, never `hl.env` (removing an env
+  and reloading does not unset it). Env vars + gsettings only on keep.
+- **Timer:** a detached process (not the GUI), so the revert still happens if
+  the GUI dies.
+- **Revert keybind:** lives in saved config, so a preview can never remove
+  it. Runs the CLI only (no GUI or Noctalia needed). Key picked with the
+  owner after checking `hyprctl binds -j` (Super+= is taken).
+
+### Saved Hyprland file
+
+`~/.config/hypr/config/lacquer.lua`, required from `hyprland.lua`
+(back up `hyprland.lua` first; `~/.config/hypr` has no git). Placed after
+`apply_theme()` so Lacquer border colors win in `lacquer` palette mode, and
+before `dashboard_options`.
+
+**Known issue until merge:** hypr-dashboard's `dashboard_options` loads later,
+so any look option it also sets (gaps, rounding, ...) overrides Lacquer
+silently. Phase 1 has `lacquer doctor` list those overlaps.
+
+### Files
+
+- Themes: `~/.config/lacquer/themes/<name>.toml`; current: `~/.config/lacquer/current.toml`
+- Snapshots: `~/.local/state/lacquer/snapshots/<timestamp>.toml` (every keep)
+- Preview state: `$XDG_RUNTIME_DIR/lacquer/`
+
+### How Claude uses it
+
+`lacquer get --json`, `lacquer set windows.rounding 12 --preview`,
+screenshot check on the owner's screen, then `keep` or `revert`. Documented in
+the project CLAUDE.md, plus a memory pointer, so future sessions use the CLI
+instead of editing configs by hand.
+
+## Phases (owner may reorder)
+
+1. **Core + Hyprland module.** Theme TOML, CLI (JSON), validation,
+   preview/keep/revert, snapshots, risky timer, revert keybind, `doctor`.
+   Claude can drive the look from here on.
+2. **Noctalia module.** Bar/theme via `noctalia msg`, palette engine
+   `noctalia`, wallpaper.
+3. **Toolkit module.** GTK3/4 (gsettings), Qt (qt6ct), icons, cursor, fonts.
+4. **Own palette engine** (`lacquer` mode, no Noctalia): pick generator
+   (matugen vs Python), write GTK/Qt/Hyprland colors, export for Shellac.
+5. **GUI.** GTK4/libadwaita, sections per module, Keep/Revert bar.
+6. Later: go public (`/go-public lacquer`), merge talk with hypr-dashboard.
+
+## Open questions
+
+- Revert keybind (Phase 1).
+- Private GitHub repo now (`gh repo create --private`) or local git only for now?
+- Palette generator for `lacquer` mode (Phase 4).
