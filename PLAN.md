@@ -193,8 +193,9 @@ instead of editing configs by hand.
   - Missing icon theme or font is refused (a typo, not a risk). Missing GTK or
     cursor theme and extreme sizes are risky (timer).
   - The owner's current cursor, GTK theme, Qt style and fonts were kept
-    through Lacquer the same day. Icons were not: gsettings names
-    Papirus-Dark, which is not installed (`lacquer doctor` reports it).
+    through Lacquer the same day. Icons were split (gsettings named
+    Papirus-Dark, not installed; qt6ct had breeze): the owner picked
+    breeze-dark for both.
 
 ## Open questions
 
