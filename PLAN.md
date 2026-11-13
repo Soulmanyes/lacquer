@@ -129,8 +129,26 @@ instead of editing configs by hand.
 5. **GUI.** GTK4/libadwaita, sections per module, Keep/Revert bar.
 6. Later: go public (`/go-public lacquer`), merge talk with hypr-dashboard.
 
+## Status
+
+- **Phase 1 done (2026-11-13).** `lacquer install` ran: `hyprland.lua` loads
+  `config.lacquer` (backup `hyprland.lua.bak-2026-11-13`), `~/.local/bin/lacquer`
+  links to `bin/lacquer`. Revert key: Super+Backspace. Private repo
+  Soulmanyes/lacquer.
+- Phase 1 choices that differ from the sketch above:
+  - Keys are Hyprland option names with dots (`windows.decoration.rounding`,
+    not `windows.rounding`), so the schema comes straight from
+    `hyprctl descriptions -j` and new Hyprland options show up by themselves.
+  - `lacquer set` previews by default; `--keep` saves in one step and is
+    refused for risky values.
+  - The `[windows]` section covers `decoration:*`, the look part of
+    `general:` (gaps, border size, colors), group colors, the groupbar and
+    `animations:enabled`. Animation curves and speeds (`hl.animation`) are not
+    options, so they are not in Phase 1; they need their own module.
+  - Pressing the revert key with no preview on record does nothing
+    (`lacquer revert --force` reloads anyway).
+
 ## Open questions
 
-- Revert keybind (Phase 1).
-- Private GitHub repo now (`gh repo create --private`) or local git only for now?
 - Palette generator for `lacquer` mode (Phase 4).
+- Animations module (curves, speeds): which phase?
