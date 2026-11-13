@@ -1,11 +1,12 @@
 # CLAUDE.md
 
-Lacquer is the owner's desktop look customiser (Hyprland and Noctalia now;
-GTK/Qt, cursor, fonts in later phases). `PLAN.md` is the spec: read it before
+Lacquer is the owner's desktop look customiser (Hyprland, Noctalia, GTK/Qt,
+cursor and fonts). `PLAN.md` is the spec: read it before
 adding a phase.
 
 Sections: `windows` (Hyprland), `bar`, `shell`, `palette`, `wallpaper`
-(Noctalia). `lacquer status` lists the ones that are usable right now.
+(Noctalia), `toolkit`, `cursor`, `fonts` (GTK/Qt). `lacquer status` lists the
+ones that are usable right now.
 
 ## Changing the owner's look: use the CLI, not the config files
 
@@ -48,6 +49,18 @@ Rules:
   different, give its `wallpaper.monitors.<output>` in the same `set`.
 - A palette change runs Noctalia's templates (kitty, GTK, ...) and shows a
   Noctalia notification; that is normal.
+- GTK/Qt sections: do not call `gsettings set`, `nwg-look` or edit
+  `qt6ct.conf`, `settings.ini` or `~/.icons/default` for these. Keys:
+  `toolkit.gtk_theme`, `toolkit.icon_theme`, `toolkit.qt_style`,
+  `cursor.theme`, `cursor.size`, `fonts.interface`, `fonts.document`,
+  `fonts.monospace` (family, may end in Bold/Italic) and each `_size` (points).
+  `lacquer schema toolkit` / `cursor` lists the installed themes under
+  `choices`. An icon theme or font that is not installed is refused; a missing
+  GTK or cursor theme and extreme sizes are risky. Colors are not here: they
+  come from the palette.
+- Never edit `~/.config/hypr/config/lacquer_cursor.lua` (cursor env vars,
+  rewritten on every cursor keep). The env vars reach apps started after the
+  next login; the cursor itself changes at once.
 - If a keep fails half-way (Hyprland config error), a Noctalia preview stays
   live: `lacquer revert --force` puts it back.
 - The owner's blind revert key is Super+Backspace (bound in `lacquer.lua`).
@@ -68,6 +81,14 @@ Rules:
   preview/keep/revert with the old values in `$XDG_RUNTIME_DIR/lacquer/old/`.
   A Noctalia config table is a `noctalia.ConfigModule` with `table` and
   `wanted(key)` (see `modules/shell.py`, 20 lines).
+- A key that lands in several programs' settings (gsettings, `qt6ct.conf`) is
+  a `places.Placed` module: fill in `read()`, `write()` and `touched()` (the
+  place names a change can alter); revert then restores each place exactly. A
+  new kind of place is one entry in `places.KINDS`. Files only written on keep
+  (GTK `settings.ini`) go through `gtk.mirror()` in the module's `keep()`.
+  `ini.edit()` changes one key of a foreign INI file and leaves a
+  `.bak-lacquer` copy the first time. A module with its own Hyprland Lua file
+  hooks it in with `hyprconf.hook()` (see `modules/cursor.py`).
 - Module keys are relative (`decoration.rounding`); the section name is added
   by core (`windows.decoration.rounding`).
 - Hyprland facts that shaped the code are in `PLAN.md` ("Facts probed").
@@ -81,6 +102,10 @@ Rules:
   then `lacquer status` (no preview) and `hyprctl configerrors` (empty).
 - Test the timer with `--timeout 5` on `windows.decoration.dim_around 0.85`
   (risky by rule, invisible in practice).
+- GTK/Qt tests: one step on `cursor.size` or `fonts.interface_size`, then
+  revert; after it `dconf dump /org/gnome/desktop/interface/` and
+  `~/.config/qt6ct/qt6ct.conf` must equal a copy taken before. The timer path
+  is `toolkit.gtk_theme NoSuchTheme --timeout 5`.
 - Remove test themes and snapshots afterwards (`~/.config/lacquer/themes`,
   `~/.local/state/lacquer/snapshots`).
 - Noctalia tests: small steps on `bar.default.padding` or

@@ -1,5 +1,6 @@
 """Where Lacquer keeps its files, plus the one safe way to write them."""
 import os
+import shutil
 
 HOME = os.path.expanduser("~")
 CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config"), "lacquer")
@@ -33,3 +34,11 @@ def read_text(path):
 			return f.read()
 	except FileNotFoundError:
 		return None
+
+
+def backup_once(path):
+	"""Copies a file Lacquer is about to change for the first time to
+	`<file>.bak-lacquer`. Later changes keep that first copy."""
+	backup = f"{path}.bak-lacquer"
+	if os.path.isfile(path) and not os.path.exists(backup):
+		shutil.copy2(path, backup)

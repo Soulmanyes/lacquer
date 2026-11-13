@@ -168,6 +168,34 @@ instead of editing configs by hand.
   - Each `config-set` reloads Noctalia's config and plugins, so values already
     live are skipped.
 
+- **Phase 3 done (2026-11-13).** Three sections: `[toolkit]` (`gtk_theme`,
+  `icon_theme`, `qt_style`), `[cursor]` (`theme`, `size`), `[fonts]`
+  (`interface`, `document`, `monospace`, each with `_size`). Owner's scope
+  choices: that core set (no text scaling, antialiasing or hinting); Qt through
+  qt6ct only; on keep one value goes everywhere.
+- Phase 3 facts and choices:
+  - gsettings is what GTK apps on Wayland use. The settings.ini files are a
+    fallback (XWayland, sandboxed apps) and were stale; keep copies kept values
+    into them. First change to a foreign file leaves `<file>.bak-lacquer`.
+  - One Lacquer key lands in several places that can disagree (icons:
+    gsettings and `qt6ct.conf`). `lacquer/places.py` names each place
+    (`gsettings:icon-theme`, `qt6ct:Appearance/icon_theme`); a preview stores
+    the old value per place, so revert is exact (a key that was absent is
+    removed again).
+  - Cursor preview also sets gsettings, not only `hyprctl setcursor`: GTK apps
+    draw their own cursor from it, and Hyprland syncs it anyway
+    (`cursor:sync_gsettings_theme`). Only the env vars wait for keep. They are
+    in `~/.config/hypr/config/lacquer_cursor.lua` (own file: the windows module
+    rewrites `lacquer.lua` whole), hooked into `hyprland.lua` on the first
+    cursor keep. They reach apps started after the next login.
+  - qt6ct 0.11 stores fonts as QFont strings (`[Fonts] general`, `fixed`);
+    Lacquer writes the 16-field form, checked with QFont.fromString on Qt 6.12.
+  - Missing icon theme or font is refused (a typo, not a risk). Missing GTK or
+    cursor theme and extreme sizes are risky (timer).
+  - The owner's current cursor, GTK theme, Qt style and fonts were kept
+    through Lacquer the same day. Icons were not: gsettings names
+    Papirus-Dark, which is not installed (`lacquer doctor` reports it).
+
 ## Open questions
 
 - Palette generator for `lacquer` mode (Phase 4).

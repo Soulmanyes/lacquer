@@ -63,3 +63,10 @@ def reload():
 
 def config_errors():
 	return [e for e in hyprctl_json("configerrors") if e.strip()]
+
+
+def set_cursor(theme, size):
+	"""Changes the cursor of the live session (not saved)."""
+	reply = _hyprctl("setcursor", theme, str(size)).strip()
+	if reply != "ok":
+		raise LacquerError(f"Hyprland refused cursor {theme} {size}: {reply}")

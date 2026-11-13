@@ -7,16 +7,14 @@ Preview is `hyprctl eval` (live only), revert is `hyprctl reload`, keep writes
 import os
 import re
 import shutil
-import time
 
-from .. import hypr, lua, paths, tomlio
+from .. import hypr, hyprconf, lua, paths, tomlio
 from ..values import Key, LacquerError, same
 from .base import Module
 
-HYPR_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(paths.HOME, ".config"), "hypr")
-MAIN_LUA = os.path.join(HYPR_DIR, "hyprland.lua")
-LACQUER_LUA = os.path.join(HYPR_DIR, "config", "lacquer.lua")
-DASHBOARD_LUA = os.path.join(HYPR_DIR, "config", "dashboard_options.lua")
+MAIN_LUA = hyprconf.MAIN_LUA
+LACQUER_LUA = hyprconf.config_file("lacquer")
+DASHBOARD_LUA = hyprconf.config_file("dashboard_options")
 REQUIRE = 'require("config.lacquer")'
 DEFAULT_REVERT_BIND = "SUPER + BackSpace"
 MODMASK = {"SHIFT": 1, "CTRL": 4, "CONTROL": 4, "ALT": 8, "SUPER": 64}
@@ -227,37 +225,10 @@ class Windows(Module):
 		if paths.read_text(LACQUER_LUA) is None:
 			paths.atomic_write(LACQUER_LUA, self._render(section))
 			done.append(f"wrote {LACQUER_LUA}")
-		text = paths.read_text(MAIN_LUA)
-		if text is None:
-			raise LacquerError(f"{MAIN_LUA} not found")
-		if REQUIRE in text:
-			return done + ["hyprland.lua already loads config.lacquer"]
-		backup = f"{MAIN_LUA}.bak-{time.strftime('%Y-%m-%d')}"
-		if os.path.exists(backup):
-			backup += time.strftime("-%H%M%S")
-		shutil.copy2(MAIN_LUA, backup)
-		block = [
+		return done + hyprconf.hook(REQUIRE, [
 			"-- Look options kept by Lacquer (~/claude/lacquer). After the Noctalia theme",
 			"-- so they win over it, before dashboard_options.",
-			REQUIRE,
-			"",
-		]
-		lines = text.split("\n")
-		at = next((i for i, line in enumerate(lines) if 'require("config.dashboard_options")' in line), None)
-		if at is None:
-			lines = text.rstrip("\n").split("\n") + [""] + block
-		else:
-			while at > 0 and lines[at - 1].startswith("--"):
-				at -= 1
-			lines[at:at] = block
-		paths.atomic_write(MAIN_LUA, "\n".join(lines))
-		hypr.reload()
-		errors = hypr.config_errors()
-		if errors:
-			shutil.copy2(backup, MAIN_LUA)
-			hypr.reload()
-			raise LacquerError("Hyprland reported config errors, hyprland.lua is restored: " + "; ".join(errors))
-		return done + [f"backed up hyprland.lua to {backup}", "added config.lacquer to hyprland.lua"]
+		])
 
 	# -- helpers --
 
@@ -283,7 +254,7 @@ class Windows(Module):
 		return text
 
 	def _hooked(self):
-		return REQUIRE in (paths.read_text(MAIN_LUA) or "")
+		return hyprconf.hooked(REQUIRE)
 
 	def _overridden(self, section):
 		"""Saved keys whose live value differs. Only meaningful with no preview."""
