@@ -148,6 +148,26 @@ instead of editing configs by hand.
   - Pressing the revert key with no preview on record does nothing
     (`lacquer revert --force` reloads anyway).
 
+- **Phase 2 done (2026-11-13).** Four sections through `noctalia msg`:
+  `[bar]` (look of every bar, keys `<bar>.<setting>`), `[shell]` (corner
+  radius, font, borders, shadows, animation, panel look, screen corners),
+  `[palette]` (`engine = "noctalia"` only, plus mode/source/palette names),
+  `[wallpaper]` (`default`, `monitors.<output>`, fill and transition).
+  Owner's scope choices: all three areas; bar + shell look, no per-widget
+  look, no widget order.
+- Phase 2 choices that differ from the sketch above:
+  - Old values of persistent targets are in
+    `$XDG_RUNTIME_DIR/lacquer/old/<module>.json` (one file per module), not in
+    `preview.json`: core clears `preview.json` before it calls a module's
+    revert. `lacquer/persistent.py` is the shared base (toolkit module next).
+  - Noctalia gives no ranges or choices, so the schema has types only and
+    Noctalia validates on write. It clamps silently, so a preview reads the
+    value back and fails (and reverts) when it differs.
+  - Everything goes through `config-set` (it applies the theme and runs the
+    templates too); `color-scheme-set` / `theme-mode-set` are not needed.
+  - Each `config-set` reloads Noctalia's config and plugins, so values already
+    live are skipped.
+
 ## Open questions
 
 - Palette generator for `lacquer` mode (Phase 4).

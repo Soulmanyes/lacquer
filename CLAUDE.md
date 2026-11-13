@@ -1,8 +1,11 @@
 # CLAUDE.md
 
-Lacquer is the owner's desktop look customiser (Hyprland now; Noctalia, GTK/Qt,
-cursor, fonts, wallpaper in later phases). `PLAN.md` is the spec: read it before
+Lacquer is the owner's desktop look customiser (Hyprland and Noctalia now;
+GTK/Qt, cursor, fonts in later phases). `PLAN.md` is the spec: read it before
 adding a phase.
+
+Sections: `windows` (Hyprland), `bar`, `shell`, `palette`, `wallpaper`
+(Noctalia). `lacquer status` lists the ones that are usable right now.
 
 ## Changing the owner's look: use the CLI, not the config files
 
@@ -34,6 +37,19 @@ Rules:
 - `lacquer unset KEY` hands a key back to the other config files.
 - Revert is `hyprctl reload`: it also drops anything else set live with
   `hyprctl eval`.
+- Noctalia sections (`bar`, `shell`, `palette`, `wallpaper`): do not call
+  `noctalia msg config-set` or edit `settings.toml` for look values. Keys are
+  Noctalia's own names: `bar.<bar name>.<setting>` (`bar.default.radius`),
+  `shell.corner_radius_scale`, `palette.mode`, `palette.source`,
+  `palette.custom_palette`, `wallpaper.default`, `wallpaper.monitors.<output>`.
+  There is no range or choice list in the schema: Noctalia checks on write, and
+  a refused or clamped value reverts the whole preview with its message.
+- `wallpaper.default` puts the image on every monitor. To keep one monitor
+  different, give its `wallpaper.monitors.<output>` in the same `set`.
+- A palette change runs Noctalia's templates (kitty, GTK, ...) and shows a
+  Noctalia notification; that is normal.
+- If a keep fails half-way (Hyprland config error), a Noctalia preview stays
+  live: `lacquer revert --force` puts it back.
 - The owner's blind revert key is Super+Backspace (bound in `lacquer.lua`).
 - `lacquer apply <theme>` previews a whole theme; a section in the theme
   replaces that whole section. `lacquer theme save <name>` stores the kept look.
@@ -47,6 +63,11 @@ Rules:
 - One area = one file in `lacquer/modules/` exposing `MODULE` (see `base.py`
   for the interface). `core.py` and `cli.py` must not need a change for a new
   area. Value types shared by modules live in `values.py`.
+- Targets that save every change at once (Noctalia, later gsettings) subclass
+  `persistent.Persistent`: fill in `read()` and `write()`, it does
+  preview/keep/revert with the old values in `$XDG_RUNTIME_DIR/lacquer/old/`.
+  A Noctalia config table is a `noctalia.ConfigModule` with `table` and
+  `wanted(key)` (see `modules/shell.py`, 20 lines).
 - Module keys are relative (`decoration.rounding`); the section name is added
   by core (`windows.decoration.rounding`).
 - Hyprland facts that shaped the code are in `PLAN.md` ("Facts probed").
@@ -62,3 +83,8 @@ Rules:
   (risky by rule, invisible in practice).
 - Remove test themes and snapshots afterwards (`~/.config/lacquer/themes`,
   `~/.local/state/lacquer/snapshots`).
+- Noctalia tests: small steps on `bar.default.padding` or
+  `shell.panel.floating_offset`; the clamp path is
+  `bar.default.capsule_opacity 7`. A revert leaves the old value as an explicit
+  line in `~/.local/state/noctalia/settings.toml` (Noctalia has no unset);
+  that is expected.

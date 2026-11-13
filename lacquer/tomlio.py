@@ -59,3 +59,8 @@ def dumps(data):
 
 	table(data, [])
 	return "\n".join(out).rstrip("\n") + "\n"
+
+
+def literal(value):
+	"""One value as TOML text (what `noctalia msg config-set` takes)."""
+	return _value(value)

@@ -51,3 +51,28 @@ def seconds_left(state):
 	if not state.get("token"):
 		return None
 	return max(0, round(state["revert_at"] - time.time()))
+
+
+# -- old values of persistent targets --
+# Targets like Noctalia or gsettings save a change the moment it is made, so a
+# preview there has to remember what it replaced. One file per module, written
+# before the change, so `lacquer revert` works after a crash.
+
+def _old_path(name):
+	return os.path.join(paths.RUNTIME, "old", f"{name}.json")
+
+
+def old_load(name):
+	text = paths.read_text(_old_path(name))
+	return json.loads(text) if text else {}
+
+
+def old_save(name, values):
+	paths.atomic_write(_old_path(name), json.dumps(values))
+
+
+def old_clear(name):
+	try:
+		os.remove(_old_path(name))
+	except FileNotFoundError:
+		pass
