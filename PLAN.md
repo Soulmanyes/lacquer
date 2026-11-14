@@ -231,7 +231,11 @@ instead of editing configs by hand.
   - `palette.source` / `palette.custom_palette` set while the engine is
     `lacquer` are held back and used when the engine goes back to `noctalia`.
   - Shellac export: `~/.local/state/lacquer/palette.json` (format in
-    `colortargets/export.py`). Shellac does not read it yet.
+    `colortargets/export.py`). Nothing reads it (owner, 2026-11-14):
+    Noctalia's terminal templates run from Lacquer's palette and Shellac's
+    first theme entry follows their output, so the terminals already match.
+    The file stays for a setup without Noctalia, where nothing colors the
+    terminals; a Shellac "Lacquer" theme entry would close that gap.
   - Hyprland colors are in `config/lacquer_palette.lua`, loaded before
     `config.lacquer`, so a border color kept in `[windows]` still wins.
   - A dark/light switch made in Noctalia's own UI is followed since
@@ -286,5 +290,4 @@ instead of editing configs by hand.
 
 ## Open questions
 
-- Shellac reading `palette.json`.
 - Animations module (curves, speeds): which phase?
