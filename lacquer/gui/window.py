@@ -1,7 +1,8 @@
 """The window: a page per section, the preview queue and the Keep/Revert bar.
 
-Pages talk to the window through five calls: change(key, value),
-unset(key), run(fn, *args, then=), previewed(result) and toast(text).
+Pages talk to the window through six calls: change(key, value),
+unset(key), run(fn, *args, then=), previewed(result), refresh_pages() and
+toast(text).
 """
 import os
 import sys
@@ -11,6 +12,7 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 from .. import core, paths
 from . import pages
 from .sectionpage import SectionPage
+from .thememenu import ThemeMenu
 from .worker import Worker
 
 # A test launch gets its own id, so it never raises the owner's open window.
@@ -59,7 +61,9 @@ class Window(Adw.ApplicationWindow):
 		self.toasts = Adw.ToastOverlay(child=body)
 
 		view = Adw.ToolbarView(content=self.toasts)
-		view.add_top_bar(Adw.HeaderBar())
+		header = Adw.HeaderBar()
+		header.pack_start(ThemeMenu(self))
+		view.add_top_bar(header)
 		view.add_bottom_bar(self._preview_bar())
 		self.set_content(view)
 
@@ -131,6 +135,11 @@ class Window(Adw.ApplicationWindow):
 				then(result)
 		self.worker.call(fn, *args, done=done)
 
+	def refresh_pages(self):
+		"""After something the extra pages list (themes, snapshots) changed."""
+		for page in self.extra_pages:
+			page.refresh()
+
 	def previewed(self, result):
 		"""After any core call that started or changed a preview."""
 		changed, unchanged = list(result.get("previewed", {})), result.get("unchanged", [])
@@ -199,8 +208,7 @@ class Window(Adw.ApplicationWindow):
 			then()
 			return
 		self.reload()
-		for page in self.extra_pages:
-			page.refresh()
+		self.refresh_pages()
 		self._poll()
 
 	# -- reading --
