@@ -157,8 +157,8 @@ Rules:
 
 - `python -m py_compile lacquer/*.py lacquer/modules/*.py lacquer/gui/*.py lacquer/gui/pages/*.py`, `ruff check .`
 - Window tests: launch with `LACQUER_APP_ID=dev.lacquer.Test lacquer gui
-  <page>` through `ui-shot` (a wrapper script, so stderr lands in a file). A
-  window on workspace 77 redraws rarely: wait about 10 s (or shoot twice)
+  <page>` on a hidden workspace (through a wrapper script, so stderr lands in
+  a file). A window there redraws rarely: wait about 10 s (or shoot twice)
   before trusting a screenshot. Clicks are not possible there, so drive the
   flows by code: a script that makes `gui.window.App`, changes
   `page.rows[key].widget` on GLib timeouts and prints `core.status()` (risky

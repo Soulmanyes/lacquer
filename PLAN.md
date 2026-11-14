@@ -2,7 +2,7 @@
 
 Desktop look customiser for Hyprland (and Noctalia when present). Sibling of
 Shellac, but Lacquer never styles terminals or individual apps: it covers
-"everything else". Private repo until it works; standalone, not merged into
+"everything else". Standalone, not merged into
 hypr-dashboard (see "Saved Hyprland file").
 
 ## Decisions (owner, 2026-11-13)
@@ -26,7 +26,7 @@ hypr-dashboard (see "Saved Hyprland file").
 - **Themes:** one whole-look file per theme, made of self-contained sections
   (`[palette]`, `[windows]`, `[bar]`, `[toolkit]`, `[cursor]`, `[fonts]`,
   `[wallpaper]`). "Take the palette from theme X" = copy one section.
-- **Name:** Lacquer, `~/claude/lacquer`, CLI `lacquer`.
+- **Name:** Lacquer, CLI `lacquer`.
 
 ## Risky settings (auto-revert timer)
 
@@ -38,7 +38,7 @@ Ones that can leave you unable to see or click Revert:
 - cursor theme missing/broken, cursor size very small or 0
 - GTK font size tiny or huge, broken GTK theme (the GUI's own dialog)
 - animation speeds so slow the desktop is unusable
-- heavy blur/shadow (`blur:passes`, `blur:size`, shadow range): iGPU hang history
+- heavy blur/shadow (`blur:passes`, `blur:size`, shadow range): can hang a weak GPU
 
 Ugly-but-usable settings (colors, gaps, rounding, borders, wallpaper, bar) have
 no timer. A Hyprland crash during a preview reverts by itself, because a
@@ -46,7 +46,7 @@ preview never writes the saved config.
 
 ## Facts probed (2026-11-13)
 
-- Hyprland 0.57.1 (held), Lua config. `hyprctl keyword` is gone ("unknown
+- Hyprland 0.57.1, Lua config. `hyprctl keyword` is gone ("unknown
   request"). Live set: `hyprctl eval 'hl.config({general={gaps_in=6}})'` works.
   `hyprctl reload` re-runs the saved Lua and undoes it (tested, gaps back to 1).
 - Hyprland accepts out-of-range values: Lacquer validates type/min/max itself
@@ -60,7 +60,8 @@ preview never writes the saved config.
   `config-get/config-set/config-reload`, `color-scheme-get/set`,
   `theme-mode-get/set`, `templates-apply`, `wallpaper-get/set`. These persist
   immediately (no live-only mode).
-- Installed: gsettings, nwg-look, qt6ct. Not installed: matugen, wallust, pywal.
+- On the development PC: gsettings, nwg-look and qt6ct are installed;
+  matugen, wallust and pywal are not.
 
 ## Design
 
@@ -118,7 +119,7 @@ if a value would change).
 
 `lacquer get --json`, `lacquer set windows.rounding 12 --preview`,
 screenshot check on the owner's screen, then `keep` or `revert`. Documented in
-the project CLAUDE.md, plus a memory pointer, so future sessions use the CLI
+the project CLAUDE.md, so future sessions use the CLI
 instead of editing configs by hand.
 
 ## Phases (owner may reorder)
@@ -132,14 +133,14 @@ instead of editing configs by hand.
 4. **Own palette engine** (`lacquer` mode, no Noctalia): pick generator
    (matugen vs Python), write GTK/Qt/Hyprland colors, export for Shellac.
 5. **GUI.** GTK4/libadwaita, sections per module, Keep/Revert bar.
-6. Later: go public (`/go-public lacquer`), merge talk with hypr-dashboard.
+6. Go public: README, license, installer and updater (done 2026-11-14),
+   first release.
 
 ## Status
 
-- **Phase 1 done (2026-11-13).** `lacquer install` ran: `hyprland.lua` loads
-  `config.lacquer` (backup `hyprland.lua.bak-2026-11-13`), `~/.local/bin/lacquer`
-  links to `bin/lacquer`. Revert key: Super+Backspace. Private repo
-  Soulmanyes/lacquer.
+- **Phase 1 done (2026-11-13).** `lacquer install` makes `hyprland.lua` load
+  `config.lacquer` (dated backup first) and links `~/.local/bin/lacquer` to
+  `bin/lacquer`. Revert key: Super+Backspace.
 - Phase 1 choices that differ from the sketch above:
   - Keys are Hyprland option names with dots (`windows.decoration.rounding`,
     not `windows.rounding`), so the schema comes straight from
@@ -198,10 +199,6 @@ instead of editing configs by hand.
     Lacquer writes the 16-field form, checked with QFont.fromString on Qt 6.12.
   - Missing icon theme or font is refused (a typo, not a risk). Missing GTK or
     cursor theme and extreme sizes are risky (timer).
-  - The owner's current cursor, GTK theme, Qt style and fonts were kept
-    through Lacquer the same day. Icons were split (gsettings named
-    Papirus-Dark, not installed; qt6ct had breeze): the owner picked
-    breeze-dark for both.
 
 - **Phase 4 done (2026-11-14), live-tested and in use.** `palette.engine =
   "lacquer"` with `palette.seed` (`#rrggbb`, `wallpaper` or an image file),
@@ -211,9 +208,8 @@ instead of editing configs by hand.
   switch back) and on the real desktop as a preview (engine switch, one picked
   color, a seed change, revert: `gtk.css`, `kdeglobals`, `qt6ct.conf`,
   `hyprland.lua`, `noctalia.lua` and Noctalia's settings came back identical).
-  The owner's desktop runs on the `lacquer` engine since then (kept, default
-  seed `#b48cf0`; `hyprland.lua` loads `config.lacquer_palette`, backup
-  `hyprland.lua.bak-2026-11-14`).
+  In daily use on the `lacquer` engine since then (`hyprland.lua` loads
+  `config.lacquer_palette`).
 - Phase 4 facts and choices:
   - Generator is Lacquer's own Python (`palettegen.py`, OKLCH, Material
     "tonal spot" shape), not matugen: no dependency, and matugen is not
@@ -286,10 +282,8 @@ instead of editing configs by hand.
     start, after every keep or revert and on "Check again"; the sidebar
     shows the count ("Health (2)"). Tested by code on the real window and by
     screenshot with made-up findings; the delete question itself was not
-    seen (it did not draw on workspace 77).
-- The Noctalia community template `papirus-icons` is off since 2026-11-14
-  (it set an icon theme that is not installed on every template run).
-  Turning the last community template with GTK parts off makes Noctalia
+    seen (it did not draw on the hidden test workspace).
+- Turning the last Noctalia community template with GTK parts off makes Noctalia
   delete `noctalia-extensions.css`; `lacquer.css` then imports a missing file
   until the next palette write (any `lacquer set palette...` fixes it).
 
@@ -318,6 +312,13 @@ instead of editing configs by hand.
   - Tested live on `border`: preview and revert, every preset, refused
     curve and style, the timer, keep, unset one field, unset all; the
     animation list came back identical. Window page shows with no GUI code.
+
+- **Installer and updates (2026-11-14).** `install.sh` (also through
+  `curl | sh`) copies the app to `~/.local/share/lacquer`, links
+  `~/.local/bin/lacquer` and runs `lacquer install`. `lacquer update` and the
+  window's update menu check GitHub releases (`updater.py`, shared with
+  hypr-dashboard). Tested in a temp home with a stub `hyprctl`; the real
+  download works only once a release exists.
 
 ## Open questions
 
