@@ -2,7 +2,8 @@
 
 Settings are grouped by the middle of their key (`decoration.blur.size` sits
 in "Decoration › Blur"). Every setting shows, except one that does nothing in
-the current state: its switch is off (`needs` in the schema) or the page says
+the current state: a key it depends on has another value, such as a switch
+that is off (`needs` in the schema), or the page says
 so (`applies` of add_item()). A section that needs more than this subclasses
 SectionPage in `pages/` and overrides build().
 """
@@ -46,14 +47,16 @@ class SectionPage(Adw.PreferencesPage):
 
 	def add_row(self, group, key, applies=None, row=None):
 		"""Adds the row for a key (made from the schema unless given). Without
-		`applies`, a key that `needs` a switch hides while that switch is off."""
+		`applies`, a key hides while a key it `needs` has a value that is not
+		allowed (a switch that is off, another blur variant)."""
 		spec = self.schema[key]
 		row = row or rows.make(key, spec, self.app)
 		self.rows[key] = row
-		switch = spec.get("needs")
-		if applies is None and switch:
+		needs = spec.get("needs")
+		if applies is None and needs:
 			def applies(values):
-				return values.get(switch) is not False
+				# A value not loaded yet hides nothing.
+				return all(values.get(other) is None or values[other] in allowed for other, allowed in needs.items())
 		self.add_item(group, row.widget, applies, f"{key} {labels.title(key)} {spec.get('description', '')}")
 		return row
 

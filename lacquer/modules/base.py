@@ -18,16 +18,17 @@ class Module:
 		return {}
 
 	def needs(self, key, schema):
-		"""Returns the on/off key that must be on for `key` to do anything, or
-		None (`schema` is schema()). Front-ends hide the key while it is off.
-		Default: `enabled` of the nearest table above the key."""
+		"""Returns what must hold for `key` to do anything, as {other key:
+		[values it may have]}; empty when nothing (`schema` is schema()).
+		Front-ends hide the key while one of them has another value.
+		Default: `enabled` of the nearest table above the key must be on."""
 		parts = key.split(".")[:-1]
 		while parts:
 			switch = ".".join([*parts, "enabled"])
 			if switch != key and switch in schema and schema[switch].type == "bool":
-				return switch
+				return {switch: [True]}
 			parts.pop()
-		return None
+		return {}
 
 	def read(self, keys=None):
 		"""Returns the live value of each key (all keys if None)."""

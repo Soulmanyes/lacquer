@@ -121,15 +121,15 @@ def sections():
 
 
 def schema(prefix=""):
-	"""{key: spec}; `needs` in a spec is the on/off key that must be on for
-	this key to do anything."""
+	"""{key: spec}; `needs` in a spec is what must hold for this key to do
+	anything: {other key: [values it may have]}."""
 	out = {}
 	for name, module in modules().items():
 		keys = module.schema()
 		for key, spec in keys.items():
 			if f"{name}.{key}".startswith(prefix):
-				switch = module.needs(key, keys)
-				out[f"{name}.{key}"] = spec.public() | ({"needs": f"{name}.{switch}"} if switch else {})
+				needs = {f"{name}.{other}": allowed for other, allowed in module.needs(key, keys).items()}
+				out[f"{name}.{key}"] = spec.public() | ({"needs": needs} if needs else {})
 	return out
 
 

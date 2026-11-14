@@ -87,8 +87,10 @@ Rules:
   builds every section's page from `core.schema()` and `core.sections()`. A
   new area needs no GUI code: give the module `title` and `order`. Every
   setting shows, except one that does nothing in the current state: a key
-  whose on/off switch is off (`Module.needs()`, default the `enabled` key of
-  the table above it; it is `needs` in `core.schema()`), or one hidden by an
+  that depends on another key's value (`Module.needs()` returns `{other key:
+  [allowed values]}`, default the `enabled` key of the table above it must be
+  on; it is `needs` in `core.schema()`; the blur variant tables use it in
+  `modules/windows.py`), or one hidden by an
   `applies` function in its page (`add_row`/`add_item`, see
   `gui/pages/palette.py`). The header search (`gui/search.py`) filters every
   page that has `filter(words)` and also finds hidden settings. A new value

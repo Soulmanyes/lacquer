@@ -259,7 +259,10 @@ instead of editing configs by hand.
   - Search box in the header (2026-11-14, Ctrl+F): filters all section pages,
     pages without a match leave the sidebar. A key whose switch is off
     (`needs`: `enabled` of its table, `capsule` for the bar's capsule keys)
-    is hidden, but a search still finds it.
+    is hidden, but a search still finds it. The settings of a blur variant
+    (`decoration.blur.water.*`, ...) show only while `decoration.blur.variant`
+    is that variant; `glass.*` shows for frost, drops, prism, heat_shimmer
+    and aurora, which all read it.
   - Not in it: deleting a theme, `doctor` findings.
 - The Noctalia community template `papirus-icons` is off since 2026-11-14
   (it set an icon theme that is not installed on every template run).

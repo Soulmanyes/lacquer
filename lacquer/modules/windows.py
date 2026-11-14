@@ -46,6 +46,12 @@ RISKY = [
 	("decoration.motion_blur.samples", lambda v: v > 32, "motion blur is heavy on the GPU"),
 ]
 
+# The blur variant whose settings sit in decoration.blur.<table> is the one
+# named like the table. These tables are read by other variants (checked in
+# Hyprland 0.57.1, src/render/gl/blur/).
+BLUR_VARIANT = "decoration.blur.variant"
+BLUR_TABLE_VARIANTS = {"glass": ("frost", "drops", "prism", "heat_shimmer", "aurora")}
+
 HEADER = """\
 -- Written by Lacquer (~/claude/lacquer). Do not edit by hand: `lacquer keep`
 -- rewrites this whole file from ~/.config/lacquer/current.toml.
@@ -143,6 +149,18 @@ class Windows(Module):
 					description=d["description"],
 				)
 		return self._schema
+
+	def needs(self, key, schema):
+		needs = super().needs(key, schema)
+		parts = key.split(".")
+		variant = schema.get(BLUR_VARIANT)
+		if len(parts) == 4 and key.startswith("decoration.blur.") and variant and variant.choices:
+			# A variant this Hyprland does not know hides nothing.
+			names = BLUR_TABLE_VARIANTS.get(parts[2], (parts[2],))
+			allowed = [variant.choices[n] for n in names if n in variant.choices]
+			if allowed:
+				needs[BLUR_VARIANT] = allowed
+		return needs
 
 	def read(self, keys=None):
 		schema = self.schema()

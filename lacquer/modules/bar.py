@@ -26,7 +26,7 @@ class Bar(ConfigModule):
 	def needs(self, key, schema):
 		# The capsule settings style the capsules, drawn only with `capsule` on.
 		bar, setting = key.split(".")
-		return f"{bar}.capsule" if setting.startswith("capsule_") else None
+		return {f"{bar}.capsule": [True]} if setting.startswith("capsule_") else {}
 
 
 MODULE = Bar()
