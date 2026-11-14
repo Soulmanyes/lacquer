@@ -256,7 +256,11 @@ instead of editing configs by hand.
     timer expiry, keep, unset) and by screenshot (palette, windows, themes).
     Not tested: real mouse clicks, the color/font/file dialogs, the
     close dialog, bar/shell/wallpaper/fonts pages by eye.
-  - Not in it: deleting a theme, search, `doctor` findings.
+  - Search box in the header (2026-11-14, Ctrl+F): filters all section pages,
+    pages without a match leave the sidebar. A key whose switch is off
+    (`needs`: `enabled` of its table, `capsule` for the bar's capsule keys)
+    is hidden, but a search still finds it.
+  - Not in it: deleting a theme, `doctor` findings.
 - The Noctalia community template `papirus-icons` is off since 2026-11-14
   (it set an icon theme that is not installed on every template run).
   Turning the last community template with GTK parts off makes Noctalia

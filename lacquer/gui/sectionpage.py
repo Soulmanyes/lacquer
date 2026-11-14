@@ -2,12 +2,13 @@
 
 Settings are grouped by the middle of their key (`decoration.blur.size` sits
 in "Decoration › Blur"). Every setting shows, except one that does nothing in
-the current state (`applies` of add_item()). A section that needs more than
-this subclasses SectionPage in `pages/` and overrides build().
+the current state: its switch is off (`needs` in the schema) or the page says
+so (`applies` of add_item()). A section that needs more than this subclasses
+SectionPage in `pages/` and overrides build().
 """
 from gi.repository import Adw
 
-from . import labels, rows
+from . import labels, rows, search
 
 
 class SectionPage(Adw.PreferencesPage):
@@ -17,9 +18,12 @@ class SectionPage(Adw.PreferencesPage):
 		self.app, self.name, self.info, self.schema = app, name, info, schema
 		self.rows = {}  # full key -> row (anything with load() and set_preview())
 		self._groups = {}
-		self._items = []  # (group, widget, applies: None or fn(values) -> bool)
+		self._items = []  # (group, widget, applies: None or fn(values) -> bool, search text)
 		self._values = {}  # full key -> live value of this section, as last loaded
+		self._words = []  # the running search
 		self.build()
+		self._none = Adw.PreferencesGroup(description="Nothing on this page matches the search.", visible=False)
+		self.add(self._none)
 		self._apply_visibility()
 
 	# -- for build() --
@@ -32,18 +36,25 @@ class SectionPage(Adw.PreferencesPage):
 			self.add(group)
 		return self._groups[title]
 
-	def add_item(self, group, widget, applies=None):
+	def add_item(self, group, widget, applies=None, text=""):
 		"""Puts any widget into a group. `applies(values)` (values: full key ->
 		live value of this section) returning False hides it: for a setting
-		that does nothing in the current state. None = always shown."""
+		that does nothing in the current state. None = always shown. `text`
+		is what the search finds it by, next to the group's title."""
 		group.add(widget)
-		self._items.append((group, widget, applies))
+		self._items.append((group, widget, applies, search.fold(f"{group.get_title()} {text}")))
 
 	def add_row(self, group, key, applies=None, row=None):
-		"""Adds the row for a key (made from the schema unless given)."""
-		row = row or rows.make(key, self.schema[key], self.app)
+		"""Adds the row for a key (made from the schema unless given). Without
+		`applies`, a key that `needs` a switch hides while that switch is off."""
+		spec = self.schema[key]
+		row = row or rows.make(key, spec, self.app)
 		self.rows[key] = row
-		self.add_item(group, row.widget, applies)
+		switch = spec.get("needs")
+		if applies is None and switch:
+			def applies(values):
+				return values.get(switch) is not False
+		self.add_item(group, row.widget, applies, f"{key} {labels.title(key)} {spec.get('description', '')}")
 		return row
 
 	def build(self):
@@ -61,12 +72,25 @@ class SectionPage(Adw.PreferencesPage):
 		self._values.update({k: entry.get("value") for k, entry in values.items() if k.startswith(prefix)})
 		self._apply_visibility()
 
+	def filter(self, words):
+		"""Shows only what holds every word (`search.fold` form; none = all).
+		A search also finds what does nothing right now, so a setting behind
+		a switch that is off can still be found. Returns how many items show."""
+		self._words = words
+		return self._apply_visibility()
+
 	def _apply_visibility(self):
-		shown = set()
-		for group, widget, applies in self._items:
-			visible = applies is None or applies(self._values)
+		shown, count = set(), 0
+		for group, widget, applies, text in self._items:
+			if self._words:
+				visible = search.matches(self._words, text)
+			else:
+				visible = applies is None or applies(self._values)
 			widget.set_visible(visible)
 			if visible:
 				shown.add(group)
+				count += 1
 		for group in self._groups.values():
 			group.set_visible(group in shown)
+		self._none.set_visible(bool(self._words) and not count)
+		return count

@@ -115,4 +115,4 @@ class Page(SectionPage):
 			swatch = Swatch(key, labels.title(key), self.app)
 			self.rows[key] = swatch
 			flow.append(swatch.widget)
-		self.add_item(group, flow, self._lacquer)
+		self.add_item(group, flow, self._lacquer, " ".join(f"{key} {labels.title(key)}" for key in keys))

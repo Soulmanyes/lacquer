@@ -121,12 +121,16 @@ def sections():
 
 
 def schema(prefix=""):
-	return {
-		f"{name}.{key}": spec.public()
-		for name, module in modules().items()
-		for key, spec in module.schema().items()
-		if f"{name}.{key}".startswith(prefix)
-	}
+	"""{key: spec}; `needs` in a spec is the on/off key that must be on for
+	this key to do anything."""
+	out = {}
+	for name, module in modules().items():
+		keys = module.schema()
+		for key, spec in keys.items():
+			if f"{name}.{key}".startswith(prefix):
+				switch = module.needs(key, keys)
+				out[f"{name}.{key}"] = spec.public() | ({"needs": f"{name}.{switch}"} if switch else {})
+	return out
 
 
 def get(prefix=""):

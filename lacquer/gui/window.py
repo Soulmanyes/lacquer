@@ -11,6 +11,7 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from .. import core, paths
 from . import pages
+from .search import Search
 from .sectionpage import SectionPage
 from .thememenu import ThemeMenu
 from .worker import Worker
@@ -63,6 +64,8 @@ class Window(Adw.ApplicationWindow):
 		view = Adw.ToolbarView(content=self.toasts)
 		header = Adw.HeaderBar()
 		header.pack_start(ThemeMenu(self))
+		self.search = Search(self)
+		header.pack_end(self.search)
 		view.add_top_bar(header)
 		view.add_bottom_bar(self._preview_bar())
 		self.set_content(view)
@@ -105,6 +108,7 @@ class Window(Adw.ApplicationWindow):
 		if first:
 			self.stack.set_visible_child_name(first)
 		self._show(values)
+		self.search.apply()
 		self._poll()
 		GLib.timeout_add_seconds(1, self._poll)
 
