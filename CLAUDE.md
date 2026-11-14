@@ -4,7 +4,7 @@ Lacquer is the owner's desktop look customiser (Hyprland, Noctalia, GTK/Qt,
 cursor and fonts). `PLAN.md` is the spec: read it before
 adding a phase.
 
-Sections: `windows` (Hyprland), `bar`, `shell`, `palette`, `wallpaper`
+Sections: `windows`, `motion` (Hyprland), `bar`, `shell`, `palette`, `wallpaper`
 (Noctalia), `toolkit`, `cursor`, `fonts` (GTK/Qt). `lacquer status` lists the
 ones that are usable right now.
 
@@ -71,6 +71,12 @@ Rules:
 - Never edit `~/.config/hypr/config/lacquer_cursor.lua` (cursor env vars,
   rewritten on every cursor keep). The env vars reach apps started after the
   next login; the cursor itself changes at once.
+- Animations: `motion.<leaf>.enabled`, `.speed` (tenths of a second),
+  `.curve` (bezier name or `spring:<name>`; `lacquer schema motion` lists
+  them under `choices`) and `.style`, for the leaves `global`, `windows`,
+  `layers`, `fade`, `border`, `workspaces`, `specialWorkspace`. Sub-leaves
+  (`windowsIn`) and new curves are hypr-dashboard's Animations page. Never
+  edit `~/.config/hypr/config/lacquer_motion.lua`. A speed above 20 is risky.
 - If a keep fails half-way (Hyprland config error), a Noctalia preview stays
   live: `lacquer revert --force` puts it back.
 - The owner's blind revert key is Super+Backspace (bound in `lacquer.lua`).

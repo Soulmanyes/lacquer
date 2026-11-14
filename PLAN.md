@@ -145,7 +145,8 @@ instead of editing configs by hand.
   - The `[windows]` section covers `decoration:*`, the look part of
     `general:` (gaps, border size, colors), group colors, the groupbar and
     `animations:enabled`. Animation curves and speeds (`hl.animation`) are not
-    options, so they are not in Phase 1; they need their own module.
+    options, so they are not in Phase 1; they are the `[motion]` module
+    (Phase 5b).
   - Pressing the revert key with no preview on record does nothing
     (`lacquer revert --force` reloads anyway).
 
@@ -288,6 +289,32 @@ instead of editing configs by hand.
   delete `noctalia-extensions.css`; `lacquer.css` then imports a missing file
   until the next palette write (any `lacquer set palette...` fixes it).
 
+- **Phase 5b done (2026-11-14): `[motion]`** (`modules/motion.py`), the
+  owner's scope choice: the small section, since hypr-dashboard's Animations
+  page already edits every leaf and curve in `animations.lua`.
+  - Keys `motion.<leaf>.enabled|speed|curve|style` for the 7 leaf families
+    `global`, `windows`, `layers`, `fade`, `border`, `workspaces`,
+    `specialWorkspace`. No sub-leaves (`windowsIn`), no curve editor.
+  - `curve` is a bezier name or `spring:<name>`: Lacquer's presets
+    (`lacquer_smooth`, `lacquer_gentle`, `lacquer_snappy`, `lacquer_bounce`,
+    `lacquer_linear`, `spring:lacquer_spring`, `spring:lacquer_wobble`) plus
+    the curves of this PC. Only the presets a kept leaf uses are written.
+  - Kept leaves are in `config/lacquer_motion.lua`, loaded after
+    `config.animations`, so they win over hypr-dashboard's value for that
+    leaf. A sub-leaf set in `animations.lua` still wins over its family
+    (the owner's `specialWorkspaceIn`/`Out`): keep and `doctor` warn.
+  - `speed` above 20 (2 s) is risky.
+  - Facts probed (0.57.1): `hl.animation` refuses a leaf without `enabled`
+    or without `bezier`/`spring`, and refuses an unknown curve or style, so
+    a leaf is always written whole. A field Lacquer does not keep is read
+    with Lacquer's file emptied (one extra reload on keep). `hyprctl
+    animations -j` lists beziers but no springs (those are found in
+    `config/*.lua`). A bezier made with `hyprctl eval` survives `hyprctl
+    reload` until Hyprland restarts.
+  - Tested live on `border`: preview and revert, every preset, refused
+    curve and style, the timer, keep, unset one field, unset all; the
+    animation list came back identical. Window page shows with no GUI code.
+
 ## Open questions
 
-- Animations module (curves, speeds): which phase?
+None.
