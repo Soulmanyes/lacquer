@@ -87,20 +87,25 @@ class SectionPage(Adw.PreferencesPage):
 		return self._apply_visibility()
 
 	def reveal(self, key):
-		"""Scrolls to the row of a key and marks it for a moment. The row
+		"""Scrolls to the row of a key and marks it for a moment; a key
+		prefix (`motion.windows`) marks every row under it. A single row
 		shows from then on, even one that does nothing right now. Returns
-		False for a key this page has no row for."""
-		row = self.rows.get(key)
-		if row is None:
+		False when this page has no such row."""
+		if key in self.rows:
+			widgets = [self.rows[key].widget]
+			self._found = widgets[0]
+			self._apply_visibility()
+		else:
+			widgets = [row.widget for k, row in self.rows.items() if k.startswith(key + ".") and row.widget.get_visible()]
+		if not widgets:
 			return False
-		widget = self._found = row.widget
-		self._apply_visibility()
 
 		def show():
 			# The page scrolls to whatever takes the keyboard focus.
-			widget.grab_focus()
-			widget.add_css_class("lacquer-found")
-			GLib.timeout_add(FOUND_MS, lambda: widget.remove_css_class("lacquer-found"))
+			widgets[0].grab_focus()
+			for widget in widgets:
+				widget.add_css_class("lacquer-found")
+			GLib.timeout_add(FOUND_MS, lambda: [w.remove_css_class("lacquer-found") for w in widgets] and False)
 
 		# After the page has its size, or there is nothing to scroll yet.
 		GLib.timeout_add(REVEAL_DELAY_MS, show)
