@@ -84,6 +84,8 @@ Rules:
   `layers`, `fade`, `border`, `workspaces`, `specialWorkspace`. Sub-leaves
   (`windowsIn`) and new curves are hypr-dashboard's Animations page. Never
   edit `~/.config/hypr/config/lacquer_motion.lua`. A speed above 20 is risky.
+  Hyprland ignores `.speed` while the leaf's curve is a spring, so the window
+  hides that row then (`Motion.needs()`).
 - If a keep fails half-way (Hyprland config error), a Noctalia preview stays
   live: `lacquer revert --force` puts it back.
 - The owner's blind revert key is Super+Backspace (bound in `lacquer.lua`).

@@ -127,6 +127,16 @@ class Motion(Module):
 				out[f"{leaf}.style"] = Key(name=f"{leaf}.style", type="str", choices=choices, description="kind of movement; a percentage is how far it goes")
 		return out
 
+	def needs(self, key, schema):
+		needs = super().needs(key, schema)
+		leaf, _, field = key.partition(".")
+		curve = schema.get(f"{leaf}.curve")
+		if field == "speed" and curve and curve.choices:
+			# A spring takes its duration from its own mass, stiffness and
+			# dampening; Hyprland ignores the speed (seen in 0.57.1).
+			needs[f"{leaf}.curve"] = [c for c in curve.choices.values() if not c.startswith(SPRING)]
+		return needs
+
 	def read(self, keys=None):
 		live = self._live()
 		out = {}
