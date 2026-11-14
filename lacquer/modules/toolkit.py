@@ -83,7 +83,8 @@ class Toolkit(places.Placed):
 				out.append({"level": "warn", "check": f"toolkit.{key}", "detail": f"{value!r} is set but not installed, so apps fall back to a default"})
 			for place in self._places(key)[1:]:
 				other = places.get(place)
-				if other != value:
+				# Not set there at all (a fresh qt6ct): nothing disagrees yet.
+				if other is not None and other != value:
 					out.append({"level": "warn", "check": f"toolkit.{key}", "detail": f"{place} says {other!r}, GTK apps use {value!r}: `lacquer set toolkit.{key} <name>` makes them agree"})
 		for path, ini_key, found in gtk.stale(self._ini({k: v for k, v in live.items() if k in section})):
 			out.append({"level": "warn", "check": "toolkit.settings_ini", "detail": f"{path} has {ini_key}={found}, not the kept value: `lacquer keep` after any toolkit preview rewrites it"})

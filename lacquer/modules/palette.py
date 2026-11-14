@@ -114,7 +114,7 @@ class Palette(places.Placed):
 	def schema(self):
 		if self._schema is None:
 			keys = [
-				Key(name="engine", type="str", default="noctalia", choices={e: e for e in ENGINES}, description="who writes the colors"),
+				Key(name="engine", type="str", default="noctalia", choices={e: e for e in ENGINES}, description="who writes the colors: noctalia (Lacquer writes none) or lacquer (its own palette from a seed)"),
 				Key(name="seed", type="str", description='lacquer engine: "#rrggbb", "wallpaper" or an image file to take the main color from'),
 				Key(name="base", type="str", default="", description="lacquer engine: a Noctalia custom palette to start from (its colors win over the seed)"),
 			]
@@ -327,7 +327,8 @@ class Palette(places.Placed):
 	def doctor(self, section):
 		held = load()
 		if held["engine"] != "lacquer":
-			return [{"level": "ok", "check": "palette.engine", "detail": "Noctalia writes the colors"}]
+			who = "Noctalia writes the colors" if noctalia.running() else "Lacquer writes no colors (`lacquer set palette.engine lacquer` turns its palette on)"
+			return [{"level": "ok", "check": "palette.engine", "detail": who}]
 		names = ", ".join(t.name for t in self.targets())
 		out = [{"level": "ok", "check": "palette.engine", "detail": f"Lacquer writes the colors from seed {held['seed']} ({held['color']}) to: {names}"}]
 		if noctalia.running() and (noctalia.get("theme.source"), noctalia.get("theme.custom_palette")) != ("custom", SHELL_PALETTE):

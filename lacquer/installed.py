@@ -20,8 +20,13 @@ def _named(roots, test):
 	return sorted(found, key=str.lower)
 
 
+# Themes GTK carries inside its own library, so no folder exists for them.
+GTK_BUILTIN = ("Adwaita", "Adwaita-dark", "HighContrast", "HighContrastInverse")
+
+
 def gtk_themes():
-	return _named(THEME_ROOTS, lambda d: os.path.isdir(os.path.join(d, "gtk-3.0")) or os.path.isdir(os.path.join(d, "gtk-4.0")))
+	found = _named(THEME_ROOTS, lambda d: os.path.isdir(os.path.join(d, "gtk-3.0")) or os.path.isdir(os.path.join(d, "gtk-4.0")))
+	return sorted({*found, *GTK_BUILTIN}, key=str.lower)
 
 
 def icon_themes():

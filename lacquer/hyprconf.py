@@ -32,7 +32,7 @@ def hook(require, comment, before=None):
 	config errors. Returns a list of what it did."""
 	text = paths.read_text(MAIN_LUA)
 	if text is None:
-		raise LacquerError(f"{MAIN_LUA} not found")
+		raise LacquerError(f"{MAIN_LUA} not found: Lacquer needs Hyprland's Lua config (a hyprland.conf setup is not supported)")
 	if require in text:
 		return [f"hyprland.lua already has {require}"]
 	backup = f"{MAIN_LUA}.bak-{time.strftime('%Y-%m-%d')}"
