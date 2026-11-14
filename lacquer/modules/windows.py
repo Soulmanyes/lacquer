@@ -52,6 +52,11 @@ RISKY = [
 BLUR_VARIANT = "decoration.blur.variant"
 BLUR_TABLE_VARIANTS = {"glass": ("frost", "drops", "prism", "heat_shimmer", "aurora")}
 
+# Keys that depend on a key outside their own table: {key: {other: [values]}}.
+# dim_strength is only the dim of inactive windows (0.57.1 also starts a new
+# window's fade from it, which is not worth a row).
+NEEDS = {"decoration.dim_strength": {"decoration.dim_inactive": [True]}}
+
 HEADER = """\
 -- Written by Lacquer (~/claude/lacquer). Do not edit by hand: `lacquer keep`
 -- rewrites this whole file from ~/.config/lacquer/current.toml.
@@ -152,6 +157,7 @@ class Windows(Module):
 
 	def needs(self, key, schema):
 		needs = super().needs(key, schema)
+		needs.update({other: allowed for other, allowed in NEEDS.get(key, {}).items() if other in schema})
 		parts = key.split(".")
 		variant = schema.get(BLUR_VARIANT)
 		if len(parts) == 4 and key.startswith("decoration.blur.") and variant and variant.choices:

@@ -262,7 +262,8 @@ instead of editing configs by hand.
     is hidden, but a search still finds it. The settings of a blur variant
     (`decoration.blur.water.*`, ...) show only while `decoration.blur.variant`
     is that variant; `glass.*` shows for frost, drops, prism, heat_shimmer
-    and aurora, which all read it.
+    and aurora, which all read it. `decoration.dim_strength` shows only
+    with `dim_inactive` on (`NEEDS` in `modules/windows.py`).
   - Deleting a theme (2026-11-14): `lacquer theme delete <name>`, and a bin
     button on the Themes page that asks first (no undo; snapshots can not be
     deleted). Health page: the `doctor` findings, problems first, read at
