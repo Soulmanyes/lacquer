@@ -85,8 +85,10 @@ Rules:
   window in `lacquer/gui/`). It returns plain dicts and raises `LacquerError`.
 - The window (`lacquer gui [page]`, launcher entry from `lacquer install`)
   builds every section's page from `core.schema()` and `core.sections()`. A
-  new area needs no GUI code: give the module `title`, `order` and `common`
-  (the keys shown before "Show all settings"; fnmatch patterns). A new value
+  new area needs no GUI code: give the module `title` and `order`. Every
+  setting shows; one that does nothing in the current state is hidden by an
+  `applies` function in its page (`add_row`/`add_item`, see
+  `gui/pages/palette.py`). A new value
   type is one class in `gui/rows.py` (`BY_TYPE`); a picker for a `Key.hint`
   (`image`, `font`) is one class in `BY_HINT`; a page that needs more than
   the generic one is one file in `gui/pages/` (see its `__init__.py`). Every

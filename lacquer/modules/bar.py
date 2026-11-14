@@ -8,7 +8,7 @@ from ..noctalia import ConfigModule
 
 BEHAVIOUR = {
 	"enabled", "auto_hide", "auto_hide_delay_ms", "smart_auto_hide", "layer",
-	"reserve_space", "show_on_workspace_switch", "show_tooltip",
+	"reserve_space", "auto_hide_reserve_space", "show_on_workspace_switch", "show_tooltip",
 }
 
 
@@ -16,10 +16,6 @@ class Bar(ConfigModule):
 	name = "bar"
 	title = "Bar"
 	order = 30
-	common = (
-		"*.thickness", "*.radius", "*.background_opacity", "*.padding", "*.widget_spacing",
-		"*.margin_edge", "*.margin_ends", "*.capsule", "*.capsule_opacity", "*.shadow", "*.font_scale",
-	)
 	table = "bar"
 
 	def wanted(self, key):

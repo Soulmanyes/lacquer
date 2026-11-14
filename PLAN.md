@@ -240,8 +240,9 @@ instead of editing configs by hand.
 
 - **Phase 5 done (2026-11-14), not used by the owner yet.** `lacquer gui
   [page]` opens a GTK4/libadwaita window (launcher entry "Lacquer" from
-  `lacquer install`). Owner's choice: every section gets a page; the keys a
-  module lists as `common` show first, the rest with "Show all settings".
+  `lacquer install`). Owner's choice: every section gets a page showing every
+  setting (2026-11-14: the `common` lists and "Show all settings" switch are
+  gone); only settings that do nothing in the current state are hidden.
   - Pages are built from `core.schema()`; rows by value type
     (`gui/rows.py`), with pickers for `Key.hint` `image` and `font`.
   - Palette page: engine, mode, seed (color, wallpaper or image), base, and

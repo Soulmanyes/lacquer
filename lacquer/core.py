@@ -115,9 +115,9 @@ def _write_current(theme):
 
 def sections():
 	"""The usable sections in display order, with what a front-end needs to
-	lay them out: {name: {"title", "common"}}."""
+	lay them out: {name: {"title"}}."""
 	ordered = sorted(modules().values(), key=lambda m: (m.order, m.name))
-	return {m.name: {"title": m.title or m.name.capitalize(), "common": list(m.common)} for m in ordered}
+	return {m.name: {"title": m.title or m.name.capitalize()} for m in ordered}
 
 
 def schema(prefix=""):

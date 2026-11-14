@@ -5,11 +5,9 @@ from .. import values
 class Module:
 	# Section name in the theme file, and the first part of every key.
 	name = ""
-	# For front-ends: the section's title, its place in the list (low first)
-	# and the keys most people change (fnmatch patterns on module keys).
+	# For front-ends: the section's title and its place in the list (low first).
 	title = ""
 	order = 100
-	common = ()
 
 	def detect(self) -> bool:
 		"""Is the target installed and usable? If not the module is hidden."""

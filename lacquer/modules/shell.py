@@ -18,11 +18,6 @@ class Shell(ConfigModule):
 	name = "shell"
 	title = "Shell"
 	order = 40
-	common = (
-		"corner_radius_scale", "font_family", "animation.enabled", "animation.speed",
-		"panel.borders", "panel.shadow", "panel.transparency_mode",
-		"screen_corners.enabled", "screen_corners.size",
-	)
 	table = "shell"
 
 	def wanted(self, key):

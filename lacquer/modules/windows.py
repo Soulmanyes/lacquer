@@ -115,14 +115,6 @@ class Windows(Module):
 	name = "windows"
 	title = "Windows"
 	order = 20
-	common = (
-		"general.border_size", "general.gaps_in", "general.gaps_out",
-		"general.col.active_border", "general.col.inactive_border",
-		"decoration.rounding", "decoration.active_opacity", "decoration.inactive_opacity",
-		"decoration.shadow.enabled", "decoration.shadow.range", "decoration.shadow.color",
-		"decoration.blur.enabled", "decoration.blur.size", "decoration.blur.passes",
-		"decoration.dim_inactive", "decoration.dim_strength", "animations.enabled",
-	)
 
 	def __init__(self):
 		self._schema = None

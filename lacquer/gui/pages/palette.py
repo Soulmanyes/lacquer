@@ -1,5 +1,5 @@
-"""Palette page: engine and seed on top, the palette as swatches, Noctalia's
-own theme keys behind "Show all settings".
+"""Palette page: engine and seed on top, the palette as swatches, then
+Noctalia's own theme keys. What only one engine uses shows with that engine.
 """
 import os
 
@@ -12,6 +12,10 @@ from ..sectionpage import SectionPage
 SECTION = "palette"
 TOP = ("engine", "mode", "seed", "base")
 MODES = ("dark", "light")
+# Keys only the Lacquer engine reads (the swatches too), and Noctalia's keys
+# that pick its palette, which Lacquer holds while it writes the colors.
+LACQUER_ONLY = ("seed", "base")
+NOCTALIA_ONLY = ("source", "builtin", "community_palette", "custom_palette", "wallpaper_scheme")
 
 
 class SeedRow(Row):
@@ -75,12 +79,15 @@ class Page(SectionPage):
 	def build(self):
 		prefix = self.name + "."
 		self._groups_with_swatches = 0
+		engine = prefix + "engine"
+		self._lacquer = lambda values: values.get(engine) == "lacquer"
+		self._noctalia = lambda values: values.get(engine) != "lacquer"
 		top = self.group("Colors from")
 		for name in TOP:
 			key = prefix + name
 			if key in self.schema:
 				row = SeedRow(key, self.schema[key], "Seed", self.app) if name == "seed" else None
-				self.add_row(top, key, row=row)
+				self.add_row(top, key, self._lacquer if name in LACQUER_ONLY else None, row)
 
 		used = {prefix + name for name in TOP}
 		for mode in MODES:
@@ -92,7 +99,8 @@ class Page(SectionPage):
 
 		for key in self.schema:
 			if key not in used:
-				self.add_row(self.group("Noctalia theme"), key, always=False)
+				name = key[len(prefix):]
+				self.add_row(self.group("Noctalia theme"), key, self._noctalia if name in NOCTALIA_ONLY else None)
 
 	def _swatches(self, title, keys):
 		if not keys:
@@ -107,4 +115,4 @@ class Page(SectionPage):
 			swatch = Swatch(key, labels.title(key), self.app)
 			self.rows[key] = swatch
 			flow.append(swatch.widget)
-		self.add_item(group, flow)
+		self.add_item(group, flow, self._lacquer)
