@@ -19,10 +19,11 @@ def hooked(require):
 	return require in (paths.read_text(MAIN_LUA) or "")
 
 
-def hook(require, comment):
-	"""Adds a require line (with its comment lines) to hyprland.lua, before
-	dashboard_options or at the end. Backs the file up first and restores it
-	if Hyprland reports config errors. Returns a list of what it did."""
+def hook(require, comment, before=None):
+	"""Adds a require line (with its comment lines) to hyprland.lua: above the
+	`before` line if given and found, else above dashboard_options, else at
+	the end. Backs the file up first and restores it if Hyprland reports
+	config errors. Returns a list of what it did."""
 	text = paths.read_text(MAIN_LUA)
 	if text is None:
 		raise LacquerError(f"{MAIN_LUA} not found")
@@ -34,7 +35,11 @@ def hook(require, comment):
 	shutil.copy2(MAIN_LUA, backup)
 	block = [*comment, require, ""]
 	lines = text.split("\n")
-	at = next((i for i, line in enumerate(lines) if DASHBOARD_REQUIRE in line), None)
+	at = None
+	for anchor in filter(None, (before, DASHBOARD_REQUIRE)):
+		at = next((i for i, line in enumerate(lines) if anchor in line), None)
+		if at is not None:
+			break
 	if at is None:
 		lines = text.rstrip("\n").split("\n") + [""] + block
 	else:

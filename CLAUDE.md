@@ -49,6 +49,16 @@ Rules:
   different, give its `wallpaper.monitors.<output>` in the same `set`.
 - A palette change runs Noctalia's templates (kitty, GTK, ...) and shows a
   Noctalia notification; that is normal.
+- Palette engine: `palette.engine` is `noctalia` (Noctalia makes the colors)
+  or `lacquer` (Lacquer makes them from `palette.seed`: `'#rrggbb'`,
+  `wallpaper` or an image file). In `lacquer` mode one color is
+  `palette.dark.<name>` / `palette.light.<name>` (`lacquer get palette.dark`
+  lists them; `lacquer unset` gives the derived color back), and
+  `palette.base <Noctalia palette name>` starts from an existing palette.
+  Never edit `lacquer.css`, `Lacquer.colors`, `colors/lacquer.conf`,
+  `palettes/Lacquer.json`, `lacquer_palette.lua` or
+  `~/.local/state/lacquer/palette*.json`. GTK and KDE apps show new colors
+  after a restart.
 - GTK/Qt sections: do not call `gsettings set`, `nwg-look` or edit
   `qt6ct.conf`, `settings.ini` or `~/.icons/default` for these. Keys:
   `toolkit.gtk_theme`, `toolkit.icon_theme`, `toolkit.qt_style`,
@@ -89,6 +99,10 @@ Rules:
   `ini.edit()` changes one key of a foreign INI file and leaves a
   `.bak-lacquer` copy the first time. A module with its own Hyprland Lua file
   hooks it in with `hyprconf.hook()` (see `modules/cursor.py`).
+- The `lacquer` palette engine: `palettegen.generate()` makes the palette,
+  `modules/palette.py` plans the places, one file in `lacquer/colortargets/`
+  per program that gets colors (exposes `TARGET`, see its `__init__.py`). A
+  new program = one new file there.
 - Module keys are relative (`decoration.rounding`); the section name is added
   by core (`windows.decoration.rounding`).
 - Hyprland facts that shaped the code are in `PLAN.md` ("Facts probed").
@@ -106,6 +120,13 @@ Rules:
   revert; after it `dconf dump /org/gnome/desktop/interface/` and
   `~/.config/qt6ct/qt6ct.conf` must equal a copy taken before. The timer path
   is `toolkit.gtk_theme NoSuchTheme --timeout 5`.
+- Palette engine tests: never while a game is running (it reloads Hyprland
+  and Noctalia). `lacquer set palette.engine lacquer`, look, `lacquer revert`;
+  then `gtk.css`, `kdeglobals`, `qt6ct.conf` and `noctalia msg config-get
+  theme` must equal copies taken before. For code-only checks run it in a
+  sandbox: `env -i` with `XDG_CONFIG_HOME`, `XDG_STATE_HOME`,
+  `XDG_RUNTIME_DIR`, `XDG_DATA_HOME` in a temp folder and a `PATH` holding
+  only `python3` and `magick`.
 - Remove test themes and snapshots afterwards (`~/.config/lacquer/themes`,
   `~/.local/state/lacquer/snapshots`).
 - Noctalia tests: small steps on `bar.default.padding` or

@@ -16,7 +16,8 @@ hypr-dashboard later.
   are not installed hide themselves ("only when applicable").
 - **Palette works with and without Noctalia.** `palette.engine = "noctalia" | "lacquer"`.
   Exactly one writer per target: in `lacquer` mode, Noctalia templates for the
-  targets Lacquer writes are turned off, or the two fight. Lacquer never
+  targets Lacquer writes are turned off, or the two fight (except `hyprland`,
+  see Status: there Lacquer's file is loaded later and wins). Lacquer never
   touches Noctalia's kitty/alacritty/btop templates (terminals/apps are out of
   scope; Shellac can read the palette).
 - **Apply flow:** live preview, manual Keep / Revert. Only risky settings (list
@@ -197,7 +198,48 @@ instead of editing configs by hand.
     Papirus-Dark, not installed; qt6ct had breeze): the owner picked
     breeze-dark for both.
 
+- **Phase 4 done (2026-11-14), live-tested and in use.** `palette.engine =
+  "lacquer"` with `palette.seed` (`#rrggbb`, `wallpaper` or an image file),
+  `palette.base` (a Noctalia custom palette to start from) and one key per
+  color (`palette.dark.primary`, `palette.light.terminal.red`). Tested in a
+  sandbox without Noctalia, Hyprland and gsettings (set, revert, keep, unset,
+  switch back) and on the real desktop as a preview (engine switch, one picked
+  color, a seed change, revert: `gtk.css`, `kdeglobals`, `qt6ct.conf`,
+  `hyprland.lua`, `noctalia.lua` and Noctalia's settings came back identical).
+  The owner's desktop runs on the `lacquer` engine since then (kept, default
+  seed `#b48cf0`; `hyprland.lua` loads `config.lacquer_palette`, backup
+  `hyprland.lua.bak-2026-11-14`).
+- Phase 4 facts and choices:
+  - Generator is Lacquer's own Python (`palettegen.py`, OKLCH, Material
+    "tonal spot" shape), not matugen: no dependency, and matugen is not
+    installed. An image seed needs ImageMagick.
+  - One file per color target in `lacquer/colortargets/` (`gtk`, `qt`, `kde`,
+    `hyprland`, `shell`, `export`). A target returns places, so preview and
+    revert are the same code as the toolkit module.
+  - With Noctalia running, Lacquer hands it the palette as the custom palette
+    `Lacquer` and turns off the Noctalia templates its own targets replace
+    (`gtk3`, `gtk4`, `kcolorscheme`, `qt`). Noctalia's `hyprland` template
+    stays on: turning it off makes Noctalia delete `~/.config/hypr/noctalia.lua`
+    and its require line (the owner's `decorations.lua` reads
+    `require("noctalia").colors`), and turning it on again appends the require
+    at the end of `hyprland.lua`, after `config.lacquer`. Noctalia's other
+    templates (kitty, btop, ...) keep running from Lacquer's palette. What was
+    there before is in the engine file (`handover`) and comes back when the
+    engine is `noctalia` again.
+  - The engine's state is `~/.local/state/lacquer/palette-engine.json`. Seed,
+    base and picked colors stay in it while the engine is `noctalia`.
+  - `palette.source` / `palette.custom_palette` set while the engine is
+    `lacquer` are held back and used when the engine goes back to `noctalia`.
+  - Shellac export: `~/.local/state/lacquer/palette.json` (format in
+    `colortargets/export.py`). Shellac does not read it yet.
+  - Hyprland colors are in `config/lacquer_palette.lua`, loaded before
+    `config.lacquer`, so a border color kept in `[windows]` still wins.
+  - Known gap: a dark/light switch made in Noctalia's own UI does not re-run
+    Lacquer's targets (Hyprland, GTK, Qt, KDE keep the old mode's colors until
+    the next `lacquer set palette...`).
+
 ## Open questions
 
-- Palette generator for `lacquer` mode (Phase 4).
+- Follow a dark/light switch made in Noctalia (hook or watcher) in `lacquer` mode.
+- Shellac reading `palette.json`.
 - Animations module (curves, speeds): which phase?

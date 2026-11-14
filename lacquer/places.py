@@ -1,16 +1,17 @@
 """One value in another program's settings, named by one string.
 
-`gsettings:icon-theme`, `qt6ct:Appearance/icon_theme`. A Lacquer key often
+`gsettings:icon-theme`, `qt6ct:Appearance/icon_theme`, `file:<path>` (a whole
+file), `ini:<path>::<Section>/<key>`, `noctalia:<config path>`. A Lacquer key often
 lands in several places that may disagree before Lacquer touches them, so a
 preview remembers each place, not the key, and revert puts each place back
 exactly.
 
 A new kind of place = one entry in KINDS with `get(rest)` and `put(rest, value)`.
 """
-from . import gsettings, qt6ct, state
+from . import files, gsettings, inikey, noctalia, qt6ct, state
 from .persistent import Persistent
 
-KINDS = {"gsettings": gsettings, "qt6ct": qt6ct}
+KINDS = {"gsettings": gsettings, "qt6ct": qt6ct, "file": files, "ini": inikey, "noctalia": noctalia}
 
 
 def get(place):

@@ -54,6 +54,22 @@ def config_set(path, value):
 	msg("config-set", path, tomlio.literal(value))
 
 
+def get(path):
+	"""Place form (`noctalia:<config path>`): the value, or None if unset."""
+	try:
+		return config_get(path)
+	except LacquerError:
+		return None
+
+
+def put(path, value):
+	"""Place form. Noctalia has no unset, so None leaves the value alone.
+	A value that is already live is skipped: every config-set makes Noctalia
+	reload its config and plugins."""
+	if value is not None and not same(get(path), value):
+		config_set(path, value)
+
+
 def scalars(table, wanted, prefix=""):
 	"""Flattens a config table to {dotted key: value}, plain values only."""
 	out = {}
@@ -99,8 +115,7 @@ class ConfigModule(Persistent):
 		return live if keys is None else {k: live[k] for k in keys if k in live}
 
 	def write(self, changes):
-		# Every config-set makes Noctalia reload its config and plugins, so
-		# values that are already live are skipped.
+		# Values that are already live are skipped (see put()).
 		live = self.config_values()
 		for key, value in changes.items():
 			if not same(live.get(key), value):
