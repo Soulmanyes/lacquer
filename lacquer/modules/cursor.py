@@ -17,7 +17,7 @@ THEME, SIZE = "gsettings:cursor-theme", "gsettings:cursor-size"
 SMALL, HUGE = 16, 96
 
 HEADER = """\
--- Written by Lacquer (~/claude/lacquer). Do not edit by hand: `lacquer keep`
+-- Written by Lacquer. Do not edit by hand: `lacquer keep`
 -- rewrites this whole file from ~/.config/lacquer/current.toml.
 -- Cursor for apps started from now on. Taking a line out does not unset the
 -- variable until the next login.
@@ -120,7 +120,7 @@ class Cursor(places.Placed):
 				if errors:
 					raise LacquerError("Hyprland reported config errors, the old cursor file is back: " + "; ".join(errors))
 			else:
-				hyprconf.hook(REQUIRE, ["-- Cursor env vars kept by Lacquer (~/claude/lacquer)."])
+				hyprconf.hook(REQUIRE, ["-- Cursor env vars kept by Lacquer."])
 		except LacquerError:
 			if old is None:
 				os.remove(CURSOR_LUA)

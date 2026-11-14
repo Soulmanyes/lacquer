@@ -58,7 +58,7 @@ BLUR_TABLE_VARIANTS = {"glass": ("frost", "drops", "prism", "heat_shimmer", "aur
 NEEDS = {"decoration.dim_strength": {"decoration.dim_inactive": [True]}}
 
 HEADER = """\
--- Written by Lacquer (~/claude/lacquer). Do not edit by hand: `lacquer keep`
+-- Written by Lacquer. Do not edit by hand: `lacquer keep`
 -- rewrites this whole file from ~/.config/lacquer/current.toml.
 """
 
@@ -262,7 +262,7 @@ class Windows(Module):
 			paths.atomic_write(LACQUER_LUA, self._render(section))
 			done.append(f"wrote {LACQUER_LUA}")
 		return done + hyprconf.hook(REQUIRE, [
-			"-- Look options kept by Lacquer (~/claude/lacquer). After the Noctalia theme",
+			"-- Look options kept by Lacquer. After the Noctalia theme",
 			"-- so they win over it, before dashboard_options.",
 		])
 

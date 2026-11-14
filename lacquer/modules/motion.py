@@ -62,7 +62,7 @@ PRESETS = {
 SPRING_DEF = re.compile(r'hl\.curve\(\s*"([^"]+)"\s*,\s*\{\s*type\s*=\s*"spring"')
 
 HEADER = """\
--- Written by Lacquer (~/claude/lacquer). Do not edit by hand: `lacquer keep`
+-- Written by Lacquer. Do not edit by hand: `lacquer keep`
 -- rewrites this whole file from ~/.config/lacquer/current.toml.
 -- A leaf set here wins over the same leaf in animations.lua.
 """
@@ -248,7 +248,7 @@ class Motion(Module):
 					raise LacquerError("Hyprland reported config errors, the old animations file is back: " + "; ".join(errors))
 			else:
 				hyprconf.hook(REQUIRE, [
-					"-- Animations kept by Lacquer (~/claude/lacquer). After config.animations",
+					"-- Animations kept by Lacquer. After config.animations",
 					"-- so a leaf kept here wins.",
 				])
 		except LacquerError:

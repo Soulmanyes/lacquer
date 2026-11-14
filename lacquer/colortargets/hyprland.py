@@ -17,7 +17,7 @@ from . import Target
 FILE = hyprconf.config_file("lacquer_palette")
 REQUIRE = 'require("config.lacquer_palette")'
 HEADER = """\
--- Written by Lacquer (~/claude/lacquer). Do not edit by hand: the palette
+-- Written by Lacquer. Do not edit by hand: the palette
 -- engine rewrites this whole file.
 """
 IDLE = HEADER + "-- The palette engine is not `lacquer`, so no colors are set here.\n"
@@ -68,7 +68,7 @@ class Hyprland(Target):
 	def keep(self, active):
 		if not hyprconf.hooked(REQUIRE):
 			if active:
-				hyprconf.hook(REQUIRE, ["-- Palette colors from Lacquer's own engine (~/claude/lacquer)."], before='require("config.lacquer")')
+				hyprconf.hook(REQUIRE, ["-- Palette colors from Lacquer's own engine."], before='require("config.lacquer")')
 			return []
 		# The saved file now decides, in the right order with config.lacquer.
 		hypr.reload()

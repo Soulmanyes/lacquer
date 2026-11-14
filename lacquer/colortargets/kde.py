@@ -53,7 +53,7 @@ def _sections(c):
 
 
 def _scheme(c):
-	text = f"# Written by Lacquer (~/claude/lacquer): do not edit by hand.\n[General]\nColorScheme={NAME}\nName={NAME}\n\n[KDE]\ncontrast=4\n"
+	text = f"# Written by Lacquer: do not edit by hand.\n[General]\nColorScheme={NAME}\nName={NAME}\n\n[KDE]\ncontrast=4\n"
 	text += (
 		f"\n[ColorEffects:Disabled]\nColor={color.csv(c['surface'])}\nColorAmount=0\nColorEffect=0\n"
 		"ContrastAmount=0.65\nContrastEffect=1\nIntensityAmount=0.1\nIntensityEffect=2\n"

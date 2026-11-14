@@ -45,7 +45,7 @@ def _css(c, version, extensions):
 		"theme_unfocused_bg_color": "@window_bg_color", "theme_unfocused_base_color": "@window_bg_color",
 		"theme_unfocused_selected_bg_color": "@accent_bg_color", "theme_unfocused_selected_fg_color": "@accent_fg_color",
 	}
-	text = f"/* GTK {version} colors. Written by Lacquer (~/claude/lacquer): do not edit by hand. */\n"
+	text = f"/* GTK {version} colors. Written by Lacquer: do not edit by hand. */\n"
 	if extensions:
 		text += f'@import url("{EXTENSIONS}");\n'
 	text += "\n" + "".join(f"@define-color {name} {value};\n" for name, value in named.items())

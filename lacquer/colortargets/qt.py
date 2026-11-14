@@ -41,7 +41,7 @@ class Qt(Target):
 			look.handover[self.name] = {"path": qt6ct.get("Appearance/color_scheme_path"), "custom": qt6ct.get("Appearance/custom_palette")}
 		c = look.colors
 		text = (
-			"# Written by Lacquer (~/claude/lacquer): do not edit by hand.\n[ColorScheme]\n"
+			"# Written by Lacquer: do not edit by hand.\n[ColorScheme]\n"
 			f"active_colors={_group(c)}\ndisabled_colors={_group(c, True)}\ninactive_colors={_group(c)}\n"
 		)
 		return {f"file:{FILE}": text, PATH: FILE, CUSTOM: "true"}
