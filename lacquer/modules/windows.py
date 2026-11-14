@@ -190,6 +190,11 @@ class Windows(Module):
 	def revert(self):
 		hypr.reload()
 
+	def unchanged(self, changes):
+		# Setting the old values is enough, and spares a reload (which also
+		# drops what other tools set at runtime).
+		self.preview(changes)
+
 	def doctor(self, section):
 		out = []
 

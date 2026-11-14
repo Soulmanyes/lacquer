@@ -12,7 +12,7 @@ import time
 
 from . import paths, state, tomlio
 from .modules import discover
-from .values import Invalid, LacquerError
+from .values import Invalid, LacquerError, same
 
 MIN_TIMEOUT, MAX_TIMEOUT, DEFAULT_TIMEOUT = 5, 120, 15
 DESKTOP_ENTRY = f"""[Desktop Entry]
@@ -162,40 +162,115 @@ def status():
 
 # -- preview / keep / revert --
 
-def _preview(changes, replace, keep_now, timeout):
-	"""changes: {module name: {key: value}}, already validated."""
+def _old_values(st, changes):
+	"""{module name: {key: value from before the preview}} for the changed keys.
+
+	Read live for a key's first preview, taken from the state after that. A
+	key previewed by an older state file without it has none."""
+	out = {}
+	for name, values in changes.items():
+		entry = st["modules"].get(name, {})
+		known = entry.get("before", {})
+		fresh = [k for k in values if k not in known and k not in entry.get("values", {})]
+		out[name] = {k: known[k] for k in values if k in known}
+		if fresh:
+			out[name].update(modules()[name].read(fresh))
+	return out
+
+
+def _forget(back):
+	"""Takes keys that are back at their old value out of the preview state.
+	back: {module name: [keys]}. The timer goes when nothing risky is left."""
+	st = state.load()
+	for name, keys in back.items():
+		entry = st["modules"].get(name)
+		if entry is None:
+			continue
+		for key in keys:
+			entry["values"].pop(key, None)
+			entry.get("before", {}).pop(key, None)
+		if not entry["values"]:
+			del st["modules"][name]
+	if not st["modules"]:
+		state.clear()
+		return
+	if not any(modules()[name].risk(k, v) for name, entry in st["modules"].items() if name in modules() for k, v in entry["values"].items()):
+		st.pop("token", None)
+		st.pop("revert_at", None)
+	state.save(st)
+
+
+def _preview(changes, replace, keep_now, timeout, drop_unchanged=False):
+	"""changes: {module name: {key: value}}, already validated.
+
+	drop_unchanged: a value equal to the one from before the preview is no
+	change. It is not previewed, or, if the key was in the preview, it is
+	put back and leaves the preview (which ends when it was the last one).
+	Without it such a value stays a preview, so `set` + `keep` can adopt a
+	live value."""
 	if not MIN_TIMEOUT <= timeout <= MAX_TIMEOUT:
 		raise Invalid(f"timeout must be {MIN_TIMEOUT} to {MAX_TIMEOUT} seconds")
+	st = state.load()
+	before = _old_values(st, changes)
+	back, unchanged = {}, []  # back: {module name: [previewed keys now at their old value]}
+	if drop_unchanged and not replace:
+		kept = {}
+		for name, values in changes.items():
+			entry = st["modules"].get(name, {"values": {}, "replace": False})
+			if entry["replace"]:
+				# A theme's section is kept whole, old values included.
+				kept[name] = values
+				continue
+			old = before[name]
+			at_old = [k for k, v in values.items() if k in old and same(v, old[k])]
+			unchanged += [f"{name}.{k}" for k in at_old]
+			back[name] = [k for k in at_old if k in entry["values"]]
+			kept[name] = {k: v for k, v in values.items() if k not in at_old or k in entry["values"]}
+		changes = {name: values for name, values in kept.items() if values}
 	risky = {
 		f"{name}.{k}": why
 		for name, values in changes.items()
 		for k, v in values.items()
-		if (why := modules()[name].risk(k, v))
+		if k not in back.get(name, ()) and (why := modules()[name].risk(k, v))
 	}
 	if risky and keep_now:
 		raise LacquerError("risky values can't be kept in one step, preview them first: " + "; ".join(f"{k} ({why})" for k, why in risky.items()))
 
-	# State (and the timer) go first: if the preview makes the screen
-	# unusable, the revert key and the timer already know about it.
-	st = state.load()
-	for name, values in changes.items():
-		entry = st["modules"].setdefault(name, {"values": {}, "replace": False})
-		if replace:
-			entry.update(values={}, replace=True)
-		entry["values"].update(values)
-	if risky:
-		state.arm_timer(st, timeout)
-	else:
-		state.save(st)
-
-	try:
+	if changes:
+		# State (and the timer) go first: if the preview makes the screen
+		# unusable, the revert key and the timer already know about it.
 		for name, values in changes.items():
-			modules()[name].preview(values)
-	except LacquerError as e:
-		revert()
-		raise LacquerError(f"{e}. The whole preview was reverted.") from e
+			entry = st["modules"].setdefault(name, {"values": {}, "replace": False})
+			if replace:
+				entry.update(values={}, replace=True)
+			entry["values"].update(values)
+			old = entry.setdefault("before", {})
+			for k, v in before[name].items():
+				old.setdefault(k, v)
+		if risky:
+			state.arm_timer(st, timeout)
+		else:
+			state.save(st)
+		# Modules whose every previewed value is back where it was.
+		ended = {name for name, keys in back.items() if keys and set(st["modules"][name]["values"]) <= set(keys)}
 
-	result = {"previewed": {f"{name}.{k}": v for name, values in changes.items() for k, v in values.items()}}
+		try:
+			for name, values in changes.items():
+				if name in ended:
+					modules()[name].unchanged(values)
+				else:
+					modules()[name].preview(values)
+		except LacquerError as e:
+			revert()
+			raise LacquerError(f"{e}. The whole preview was reverted.") from e
+		if any(back.values()):
+			_forget(back)
+
+	result = {"previewed": {
+		f"{name}.{k}": v for name, values in changes.items() for k, v in values.items() if k not in back.get(name, ())
+	}}
+	if unchanged:
+		result["unchanged"] = unchanged
 	if risky:
 		result["risky"] = risky
 		result["auto_revert_in"] = timeout
@@ -204,13 +279,14 @@ def _preview(changes, replace, keep_now, timeout):
 	return result
 
 
-def set_values(pairs, keep_now=False, timeout=DEFAULT_TIMEOUT):
-	"""pairs: [(key, value)]. Shows them live; saved only after keep()."""
+def set_values(pairs, keep_now=False, timeout=DEFAULT_TIMEOUT, drop_unchanged=False):
+	"""pairs: [(key, value)]. Shows them live; saved only after keep().
+	drop_unchanged: see _preview()."""
 	changes = {}
 	for key, value in pairs:
 		module, rest = _split(key)
 		changes.setdefault(module.name, {})[rest] = _validate(module, rest, value)
-	return _preview(changes, False, keep_now, timeout)
+	return _preview(changes, False, keep_now, timeout, drop_unchanged)
 
 
 def apply(theme_name, keep_now=False, timeout=DEFAULT_TIMEOUT):

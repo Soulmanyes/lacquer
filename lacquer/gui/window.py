@@ -133,8 +133,11 @@ class Window(Adw.ApplicationWindow):
 
 	def previewed(self, result):
 		"""After any core call that started or changed a preview."""
-		for key in result.get("previewed", {}):
+		changed, unchanged = list(result.get("previewed", {})), result.get("unchanged", [])
+		for key in changed:
 			self._row_preview(key, True)
+		for key in unchanged:
+			self._row_preview(key, False)
 		if result.get("risky"):
 			reasons = "; ".join(f"{k}: {why}" for k, why in result["risky"].items())
 			self.toast(f"Risky ({reasons}). Reverts in {result['auto_revert_in']} s unless you keep it.")
@@ -142,7 +145,7 @@ class Window(Adw.ApplicationWindow):
 			self.toast("Not usable here, skipped: " + ", ".join(result["skipped_sections"]))
 		# A change can move other values too (one wallpaper for all monitors,
 		# a seed for the whole palette), so read the touched sections again.
-		self.reload({key.split(".", 1)[0] for key in result.get("previewed", {})})
+		self.reload({key.split(".", 1)[0] for key in changed + unchanged})
 		self._poll()
 
 	# -- preview queue --
@@ -153,7 +156,8 @@ class Window(Adw.ApplicationWindow):
 			return False
 		pairs, self.pending = list(self.pending.items()), {}
 		self.sending = True
-		self.worker.call(core.set_values, pairs, done=self._sent)
+		# A value put back to what it was before the preview is no change.
+		self.worker.call(lambda: core.set_values(pairs, drop_unchanged=True), done=self._sent)
 		return False
 
 	def _sent(self, result, error):
@@ -180,6 +184,10 @@ class Window(Adw.ApplicationWindow):
 			elif result.get("kept"):
 				self.toast("Kept")
 			self._after_end(then)
+		# A number typed just before the click is still waiting: it goes first.
+		if self.send_timer:
+			GLib.source_remove(self.send_timer)
+			self._send()
 		self.run(core.keep, then=kept)
 
 	def revert(self, then=None):

@@ -46,6 +46,11 @@ class Module:
 		"""Puts back what was there before the preview."""
 		raise NotImplementedError
 
+	def unchanged(self, changes):
+		"""The preview ends because every previewed value is to go back to
+		what it was; `changes` holds the last of them, not yet shown."""
+		self.revert()
+
 	def doctor(self, section):
 		"""Returns findings: [{"level": "ok"|"warn"|"error", "check", "detail"}]."""
 		return []

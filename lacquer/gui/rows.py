@@ -142,7 +142,12 @@ class NumberRow(Row):
 		self.changed(round(value) if self.whole else round(value, 4))
 
 	def show(self, value):
-		self.widget.set_value(value if isinstance(value, (int, float)) and not isinstance(value, bool) else 0)
+		value = value if isinstance(value, (int, float)) and not isinstance(value, bool) else 0
+		# A live value outside the described range is shown as it is.
+		adjustment = self.widget.get_adjustment()
+		adjustment.set_lower(min(adjustment.get_lower(), value))
+		adjustment.set_upper(max(adjustment.get_upper(), value))
+		self.widget.set_value(value)
 
 
 class ChoiceRow(Row):
@@ -177,9 +182,9 @@ class TextRow(Row):
 		self.shown = ""
 		self.entry = Gtk.Entry(valign=CENTER, width_chars=26)
 		self.entry.connect("activate", self.commit)
-		focus = Gtk.EventControllerFocus()
-		focus.connect("leave", self.commit)
-		self.entry.add_controller(focus)
+		self.focus = Gtk.EventControllerFocus()
+		self.focus.connect("leave", self.commit)
+		self.entry.add_controller(self.focus)
 		return self.action_row(title, text, self.entry)
 
 	def commit(self, *_):
@@ -189,8 +194,11 @@ class TextRow(Row):
 			self.changed(text)
 
 	def show(self, value):
+		typing = self.focus.contains_focus() and self.entry.get_text() != self.shown
 		self.shown = "" if value is None else str(value)
-		self.entry.set_text(self.shown)
+		# Text being typed is not replaced by a reload another change caused.
+		if not typing:
+			self.entry.set_text(self.shown)
 
 
 class ImageRow(TextRow):
