@@ -133,8 +133,8 @@ instead of editing configs by hand.
 4. **Own palette engine** (`lacquer` mode, no Noctalia): pick generator
    (matugen vs Python), write GTK/Qt/Hyprland colors, export for Shellac.
 5. **GUI.** GTK4/libadwaita, sections per module, Keep/Revert bar.
-6. Go public: README, license, installer and updater (done 2026-11-14),
-   first release.
+6. Go public: README, license, installer and updater, privacy guards
+   (done 2026-11-14), then the first release, 1.0.0.
 
 ## Status
 

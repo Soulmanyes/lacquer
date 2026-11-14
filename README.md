@@ -4,6 +4,8 @@ Desktop look customiser for Hyprland. One tool changes the window look, animatio
 theme, colour palette, wallpaper, GTK/Qt theme, cursor and fonts, with a live preview that you keep
 or revert.
 
+![Lacquer on its Palette page, with the engine, seed and the dark colors](docs/screenshot.png)
+
 - **Live preview.** Every change shows on the real desktop first. Nothing is saved until you keep it.
 - **Keep or revert.** `lacquer keep` saves the preview, `lacquer revert` drops it. A fixed key
   (Super + BackSpace) reverts blind if the screen is unusable.
