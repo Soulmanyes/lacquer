@@ -119,6 +119,12 @@ Rules:
   `modules/palette.py` plans the places, one file in `lacquer/colortargets/`
   per program that gets colors (exposes `TARGET`, see its `__init__.py`). A
   new program = one new file there.
+- A change made outside Lacquer that the kept look depends on is followed by
+  `lacquer sync` (`Module.sync()`, run by a hook that the module's
+  `install()` sets up; today Noctalia's dark/light switch in
+  `modules/palette.py`). Every core call that changes things carries
+  `@lock.exclusive` (`lock.py`): one at a time across the CLI, the window,
+  the timer and hooks. Give a new changing core call the same decorator.
 - Module keys are relative (`decoration.rounding`); the section name is added
   by core (`windows.decoration.rounding`).
 - Hyprland facts that shaped the code are in `PLAN.md` ("Facts probed").

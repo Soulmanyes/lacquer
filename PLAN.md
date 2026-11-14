@@ -234,9 +234,16 @@ instead of editing configs by hand.
     `colortargets/export.py`). Shellac does not read it yet.
   - Hyprland colors are in `config/lacquer_palette.lua`, loaded before
     `config.lacquer`, so a border color kept in `[windows]` still wins.
-  - Known gap: a dark/light switch made in Noctalia's own UI does not re-run
-    Lacquer's targets (Hyprland, GTK, Qt, KDE keep the old mode's colors until
-    the next `lacquer set palette...`).
+  - A dark/light switch made in Noctalia's own UI is followed since
+    2026-11-14: `lacquer install` adds `lacquer sync` to Noctalia's
+    `hooks.theme_mode_changed`; `sync` writes the targets again when the mode
+    differs from the one they were written for (`applied` in the engine
+    file, which also stops a reload loop). The seed color is not taken again
+    (a wallpaper seed keeps its color). During a preview `sync` does nothing.
+    Changing calls in `core.py` run one at a time across processes
+    (`lock.py`), so a hook never writes in the middle of a revert. Tested
+    live: light and back, and a `palette.mode` preview with revert; every
+    file came back identical. `doctor` warns when the hook is missing.
 
 - **Phase 5 done (2026-11-14), not used by the owner yet.** `lacquer gui
   [page]` opens a GTK4/libadwaita window (launcher entry "Lacquer" from
@@ -279,6 +286,5 @@ instead of editing configs by hand.
 
 ## Open questions
 
-- Follow a dark/light switch made in Noctalia (hook or watcher) in `lacquer` mode.
 - Shellac reading `palette.json`.
 - Animations module (curves, speeds): which phase?

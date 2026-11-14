@@ -45,6 +45,7 @@ def _parser():
 	add("apply", "preview a whole theme (name or file)", (common, timed)).add_argument("theme")
 	add("doctor", "check the setup and list overlaps with other config")
 	add("install", "hook Lacquer into the system (config require, revert key, PATH)")
+	add("sync", "follow a change made outside Lacquer (run by hooks, such as Noctalia's dark/light switch)")
 	add("gui", "open the window", ()).add_argument("page", nargs="?", help="section to open on, for example windows")
 
 	theme = add("theme", "saved themes").add_subparsers(dest="action", required=True)
@@ -83,6 +84,8 @@ def _run(args):
 		return core.doctor()
 	if c == "install":
 		return core.install()
+	if c == "sync":
+		return core.sync()
 	if c == "theme":
 		if args.action == "list":
 			return core.theme_list()

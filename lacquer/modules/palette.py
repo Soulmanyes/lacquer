@@ -51,7 +51,12 @@ FALLBACK_SEED = "#7aa2f7"
 # `lacquer` they point at Lacquer's palette, so a value set for them is held
 # back until the engine is `noctalia` again.
 HELD = ("source", "custom_palette")
-BLANK = {"engine": "noctalia", "seed": None, "seed_default": True, "color": None, "base": "", "mode": "dark", "overrides": {}, "handover": {}}
+# `applied`: the mode the targets were last written for (sync() compares it).
+BLANK = {"engine": "noctalia", "seed": None, "seed_default": True, "color": None, "base": "", "mode": "dark", "applied": None, "overrides": {}, "handover": {}}
+# Noctalia runs these commands after a dark/light switch (a list of shell
+# commands in its config).
+MODE_HOOK = "hooks.theme_mode_changed"
+SYNC_COMMAND = f"{paths.USER_BIN} sync"
 
 
 def _is_color_key(key):
@@ -219,18 +224,21 @@ class Palette(places.Placed):
 				theirs[key] = value
 		return held, theirs
 
-	def _plan(self, held, theirs):
+	def _plan(self, held, theirs, reseed=True):
 		"""Returns ({place: value} in writing order, calls to make after) that
 		bring the system to the engine state `held` and set the Noctalia keys
-		`theirs`."""
+		`theirs`. reseed=False keeps the color taken from the seed before
+		(an image is not read again)."""
 		was = load()
 		written, after = {}, []
 		if held["engine"] == "lacquer":
 			if held["seed"] is None:
 				held.update(seed=self._default_seed(), seed_default=True)
-			held["color"] = self._seed_color(held["seed"])
+			if reseed or not held["color"]:
+				held["color"] = self._seed_color(held["seed"])
+			held["applied"] = self._mode(held, theirs)
 			look = colortargets.Look(
-				mode=self._mode(held, theirs), seed=held["color"], palette=palette_of(held),
+				mode=held["applied"], seed=held["color"], palette=palette_of(held),
 				templates=tuple(t for target in self.targets() for t in target.templates), handover=held["handover"],
 			)
 			for target in self.targets():
@@ -292,6 +300,30 @@ class Palette(places.Placed):
 		state.old_clear(self.name)
 		return warnings
 
+	def sync(self):
+		# Noctalia's dark/light switch only recolors the shell and what its
+		# templates write; Lacquer's own targets still hold the other mode.
+		held = load()
+		if held["engine"] != "lacquer":
+			return []
+		mode = self._mode(held, {})
+		# Also what stops a loop: writing the targets makes Noctalia reload.
+		if mode == held["applied"]:
+			return []
+		self._run(*self._plan(held, {}, reseed=False))
+		for target in self.targets():
+			target.keep(True)
+		return [f"palette: targets written for {mode} mode"]
+
+	def _hooked(self):
+		return SYNC_COMMAND in (noctalia.get(MODE_HOOK) or [])
+
+	def install(self, section):
+		if not noctalia.running() or self._hooked():
+			return []
+		noctalia.config_set(MODE_HOOK, [*(noctalia.get(MODE_HOOK) or []), SYNC_COMMAND])
+		return [f"added `{SYNC_COMMAND}` to Noctalia's {MODE_HOOK}"]
+
 	def doctor(self, section):
 		held = load()
 		if held["engine"] != "lacquer":
@@ -300,6 +332,8 @@ class Palette(places.Placed):
 		out = [{"level": "ok", "check": "palette.engine", "detail": f"Lacquer writes the colors from seed {held['seed']} ({held['color']}) to: {names}"}]
 		if noctalia.running() and (noctalia.get("theme.source"), noctalia.get("theme.custom_palette")) != ("custom", SHELL_PALETTE):
 			out.append({"level": "warn", "check": "palette.shell", "detail": "Noctalia's palette was changed outside Lacquer, so the shell and the apps disagree: set `palette.engine` again (\"lacquer\" to take over, \"noctalia\" to hand back)"})
+		if noctalia.running() and not self._hooked():
+			out.append({"level": "warn", "check": "palette.mode_hook", "detail": "a dark/light switch made in Noctalia is not followed by GTK, Qt and Hyprland colors: run `lacquer install`"})
 		if held["seed"] and not held["seed"].startswith("#") and not wallcolor.available():
 			out.append({"level": "warn", "check": "palette.seed", "detail": "the seed is an image but ImageMagick (`magick`) is not installed"})
 		return out

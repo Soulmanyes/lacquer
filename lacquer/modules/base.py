@@ -62,6 +62,12 @@ class Module:
 		what it was; `changes` holds the last of them, not yet shown."""
 		self.revert()
 
+	def sync(self):
+		"""Something outside Lacquer changed what the kept look depends on
+		(Noctalia's dark/light mode): bring the module's targets in line.
+		Only called with no preview running. Returns a list of what it did."""
+		return []
+
 	def doctor(self, section):
 		"""Returns findings: [{"level": "ok"|"warn"|"error", "check", "detail"}]."""
 		return []

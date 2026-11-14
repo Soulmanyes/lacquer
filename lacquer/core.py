@@ -10,7 +10,7 @@ import os
 import shutil
 import time
 
-from . import paths, state, tomlio
+from . import lock, paths, state, tomlio
 from .modules import discover
 from .values import Invalid, LacquerError, same
 
@@ -204,6 +204,7 @@ def _forget(back):
 	state.save(st)
 
 
+@lock.exclusive
 def _preview(changes, replace, keep_now, timeout, drop_unchanged=False):
 	"""changes: {module name: {key: value}}, already validated.
 
@@ -311,6 +312,7 @@ def apply(theme_name, keep_now=False, timeout=DEFAULT_TIMEOUT):
 	return result
 
 
+@lock.exclusive
 def keep():
 	"""Saves the running preview."""
 	st = state.load()
@@ -333,6 +335,7 @@ def keep():
 	return _with_warnings({"kept": kept}, warnings)
 
 
+@lock.exclusive
 def revert(force=False):
 	"""Drops the running preview. force reverts every module even with no
 	preview on record (for changes made behind Lacquer's back)."""
@@ -343,6 +346,7 @@ def revert(force=False):
 	return {"reverted": names}
 
 
+@lock.exclusive
 def unset(keys):
 	"""Stops keeping keys, handing them back to the other config files."""
 	if state.load()["modules"]:
@@ -412,6 +416,7 @@ def snapshot_restore(name, keep_now=False):
 
 # -- setup --
 
+@lock.exclusive
 def install():
 	done = []
 	if not os.path.lexists(paths.USER_BIN):
@@ -426,6 +431,19 @@ def install():
 	for module in modules().values():
 		done += module.install(_saved(theme, module))
 	return {"installed": done}
+
+
+@lock.exclusive
+def sync():
+	"""Brings the kept look in line after a change made outside Lacquer.
+	Run by hooks that `install` sets up (Noctalia's dark/light switch)."""
+	if state.load()["modules"]:
+		# The preview wrote its own mode, and its revert puts every place back.
+		return {"synced": [], "skipped": "a preview is running"}
+	done = []
+	for module in modules().values():
+		done += module.sync()
+	return {"synced": done}
 
 
 def doctor():
