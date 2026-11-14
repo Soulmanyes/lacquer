@@ -7,9 +7,12 @@ that is off (`needs` in the schema), or the page says
 so (`applies` of add_item()). A section that needs more than this subclasses
 SectionPage in `pages/` and overrides build().
 """
-from gi.repository import Adw
+from gi.repository import Adw, GLib
 
 from . import labels, rows, search
+
+REVEAL_DELAY_MS = 200
+FOUND_MS = 2500  # how long a revealed row stays marked
 
 
 class SectionPage(Adw.PreferencesPage):
@@ -22,6 +25,7 @@ class SectionPage(Adw.PreferencesPage):
 		self._items = []  # (group, widget, applies: None or fn(values) -> bool, search text)
 		self._values = {}  # full key -> live value of this section, as last loaded
 		self._words = []  # the running search
+		self._found = None  # widget of the row reveal() was asked for: stays visible
 		self.build()
 		self._none = Adw.PreferencesGroup(description="Nothing on this page matches the search.", visible=False)
 		self.add(self._none)
@@ -82,6 +86,26 @@ class SectionPage(Adw.PreferencesPage):
 		self._words = words
 		return self._apply_visibility()
 
+	def reveal(self, key):
+		"""Scrolls to the row of a key and marks it for a moment. The row
+		shows from then on, even one that does nothing right now. Returns
+		False for a key this page has no row for."""
+		row = self.rows.get(key)
+		if row is None:
+			return False
+		widget = self._found = row.widget
+		self._apply_visibility()
+
+		def show():
+			# The page scrolls to whatever takes the keyboard focus.
+			widget.grab_focus()
+			widget.add_css_class("lacquer-found")
+			GLib.timeout_add(FOUND_MS, lambda: widget.remove_css_class("lacquer-found"))
+
+		# After the page has its size, or there is nothing to scroll yet.
+		GLib.timeout_add(REVEAL_DELAY_MS, show)
+		return True
+
 	def _apply_visibility(self):
 		shown, count = set(), 0
 		for group, widget, applies, text in self._items:
@@ -89,6 +113,7 @@ class SectionPage(Adw.PreferencesPage):
 				visible = search.matches(self._words, text)
 			else:
 				visible = applies is None or applies(self._values)
+			visible = visible or widget is self._found
 			widget.set_visible(visible)
 			if visible:
 				shown.add(group)

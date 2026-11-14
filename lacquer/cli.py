@@ -48,7 +48,7 @@ def _parser():
 	add("doctor", "check the setup and list overlaps with other config")
 	add("install", "hook Lacquer into the system (config require, revert key, PATH)")
 	add("sync", "follow a change made outside Lacquer (run by hooks, such as Noctalia's dark/light switch)")
-	add("gui", "open the window", ()).add_argument("page", nargs="?", help="section to open on, for example windows")
+	add("gui", "open the window", ()).add_argument("page", nargs="?", help="section to open on (windows), or a setting to scroll to (windows.decoration.rounding)")
 
 	theme = add("theme", "saved themes").add_subparsers(dest="action", required=True)
 	theme.add_parser("list", parents=[common])

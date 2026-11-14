@@ -7,7 +7,7 @@ toast(text) and retitle(page, title).
 import os
 import sys
 
-from gi.repository import Adw, Gdk, GLib, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .. import core, paths
 from . import pages
@@ -19,6 +19,7 @@ from .worker import Worker
 # A test launch gets its own id, so it never raises the owner's open window.
 APP_ID = os.environ.get("LACQUER_APP_ID") or paths.APP_ID
 SEND_DELAY_MS = 250  # a dragged slider sends its last value, not every step
+GO_ACTION = "go"
 CSS = """
 list.boxed-list, .card { border: 1px solid alpha(currentColor, 0.25); }
 .lacquer-mark {
@@ -36,13 +37,15 @@ list.boxed-list, .card { border: 1px solid alpha(currentColor, 0.25); }
 	padding: 8px 12px;
 }
 .lacquer-bar .timer { color: @warning_color; font-weight: bold; }
+row.lacquer-found { background: alpha(@accent_bg_color, 0.35); outline: 2px solid @accent_bg_color; outline-offset: -2px; }
 """
 
 
 class Window(Adw.ApplicationWindow):
-	def __init__(self, app, page=None):
+	def __init__(self, app, target=None):
 		super().__init__(application=app, title="Lacquer", default_width=980, default_height=760)
-		self.first_page = page
+		self.target = target  # page or key to open on, once the pages exist
+		self.built = False
 		self.worker = Worker()
 		self.section_pages = {}
 		self.extra_pages = []
@@ -104,13 +107,30 @@ class Window(Adw.ApplicationWindow):
 			self.extra_pages.append(page)
 			self.stack.add_titled(page, module.__name__.rsplit(".", 1)[-1], module.TITLE)
 		self.stack.remove(self.stack.get_child_by_name("loading"))
-		first = self.first_page if self.first_page and self.stack.get_child_by_name(self.first_page) else next(iter(self.section_pages), None)
-		if first:
-			self.stack.set_visible_child_name(first)
+		self.stack.set_visible_child_name(next(iter(self.section_pages), self.stack.get_visible_child_name()))
 		self._show(values)
 		self.search.apply()
+		self.built = True
+		self.go_to(self.target)
 		self._poll()
 		GLib.timeout_add_seconds(1, self._poll)
+
+	def go_to(self, target):
+		"""Opens a page by name (`windows`), or a setting by its key
+		(`windows.decoration.rounding`): its page, scrolled to its row."""
+		if not self.built:
+			self.target = target
+			return
+		name = (target or "").split(".")[0]
+		if not name or self.stack.get_child_by_name(name) is None:
+			return
+		page = self.section_pages.get(name)
+		if "." in target and page is not None:
+			# A running search could hide the page or the row.
+			self.search.set_text("")
+			self.search.apply()
+			page.reveal(target)
+		self.stack.set_visible_child_name(name)
 
 	# -- for pages --
 
@@ -287,17 +307,25 @@ class Window(Adw.ApplicationWindow):
 
 
 class App(Adw.Application):
-	def __init__(self, page=None):
+	def __init__(self, target=None):
 		super().__init__(application_id=APP_ID)
 		self.window = None
-		self.page = page
+		self.target = target
+		# What a second `lacquer gui <target>` sends to the open window.
+		go = Gio.SimpleAction.new(GO_ACTION, GLib.VariantType.new("s"))
+		go.connect("activate", self._go)
+		self.add_action(go)
+
+	def _go(self, _action, target):
+		self.activate()
+		self.window.go_to(target.get_string())
 
 	def do_activate(self):
 		if self.window is None:
 			provider = Gtk.CssProvider()
 			provider.load_from_string(CSS)
 			Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-			self.window = Window(self, self.page)
+			self.window = Window(self, self.target)
 		self.window.present()
 
 	def do_shutdown(self):
@@ -306,6 +334,13 @@ class App(Adw.Application):
 		Adw.Application.do_shutdown(self)
 
 
-def run(page=None):
-	"""Opens the window, on the named section's page if given."""
-	return App(page).run([sys.argv[0]])
+def run(target=None):
+	"""Opens the window, on a section's page (`windows`) or at one setting
+	(`windows.decoration.rounding`) if given. A window that is already open
+	goes there instead."""
+	app = App(target)
+	app.register(None)
+	if app.get_is_remote():
+		app.activate_action(GO_ACTION, GLib.Variant("s", target or ""))
+		return 0
+	return app.run([sys.argv[0]])
