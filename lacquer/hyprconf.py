@@ -1,4 +1,5 @@
 """Hooking a Lacquer-written Lua file into the owner's hyprland.lua."""
+import glob
 import os
 import shutil
 import time
@@ -13,6 +14,11 @@ DASHBOARD_REQUIRE = 'require("config.dashboard_options")'
 
 def config_file(name):
 	return os.path.join(HYPR_DIR, "config", f"{name}.lua")
+
+
+def own_files():
+	"""The Lua files Lacquer writes into the Hyprland config (all generated)."""
+	return sorted(glob.glob(os.path.join(HYPR_DIR, "config", "lacquer*.lua")))
 
 
 def hooked(require):

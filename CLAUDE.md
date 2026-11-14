@@ -36,6 +36,13 @@ Rules:
   hypr-dashboard's `dashboard_options.lua` sets the same option and wins;
   `lacquer doctor` lists those options. Change those in hypr-dashboard instead.
 - `lacquer unset KEY` hands a key back to the other config files.
+- Lacquer and hypr-dashboard stay two apps with one writer per setting
+  (owner's choice, 2026-11-14): Lacquer owns the look (`windows`, the `motion`
+  leaves, its `lacquer*.lua` files), hypr-dashboard everything else.
+  `lacquer owned` is the list hypr-dashboard reads to show those read-only
+  ("Open in Lacquer"); `lacquer adopt KEY...` keeps a key at its live value,
+  which hypr-dashboard's "Move to Lacquer" button calls before it drops its
+  own copy. A new module that writes Hyprland config fills in `Module.owns()`.
 - Revert is `hyprctl reload`: it also drops anything else set live with
   `hyprctl eval`.
 - Noctalia sections (`bar`, `shell`, `palette`, `wallpaper`): do not call

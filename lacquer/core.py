@@ -366,6 +366,46 @@ def unset(keys):
 	return _with_warnings({"unset": list(keys)}, warnings)
 
 
+@lock.exclusive
+def adopt(keys):
+	"""Starts keeping keys at the value they have right now, whoever set it.
+	For a tool that hands its settings over to Lacquer (hypr-dashboard): the
+	look does not change, and its own value can go afterwards."""
+	if state.load()["modules"]:
+		raise LacquerError("a preview is running: keep or revert it first")
+	theme = tomlio.load(paths.CURRENT)
+	touched, adopted, warnings = {}, {}, []
+	for key in keys:
+		module, rest = _split(key)
+		value = module.read([rest]).get(rest)
+		if value is None:
+			raise LacquerError(f"{key} has no value to adopt")
+		section = touched.setdefault(module.name, _saved(theme, module))
+		section[rest] = adopted[key] = _validate(module, rest, value)
+	for name, section in touched.items():
+		warnings += modules()[name].keep(section)
+		_store(theme, name, section)
+	_write_current(theme)
+	return _with_warnings({"adopted": adopted}, warnings)
+
+
+def owned():
+	"""What Lacquer is the one writer of in other programs' config, and the
+	command that opens its window (add a section name to open on that page):
+	{"open": [command], "owns": {program: {kind: {their name: Lacquer key},
+	or [file paths]}}}. Tools that edit the same config leave these alone."""
+	owns = {}
+	for module in modules().values():
+		for program, kinds in module.owns().items():
+			for kind, items in kinds.items():
+				have = owns.setdefault(program, {}).setdefault(kind, type(items)())
+				if isinstance(items, dict):
+					have.update(items)
+				else:
+					have.extend(items)
+	return {"open": [paths.LAUNCHER, "gui"], "owns": owns}
+
+
 # -- themes and snapshots --
 
 def _names(folder):

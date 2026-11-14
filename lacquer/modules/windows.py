@@ -211,6 +211,10 @@ class Windows(Module):
 		# drops what other tools set at runtime).
 		self.preview(changes)
 
+	def owns(self):
+		options = {_option(key): f"{self.name}.{key}" for key in self.schema()}
+		return {"hyprland": {"options": options, "files": hyprconf.own_files()}}
+
 	def doctor(self, section):
 		out = []
 
@@ -246,7 +250,8 @@ class Windows(Module):
 		if clash:
 			add("warn", "windows.dashboard_overlap", "hypr-dashboard also sets these and loads later, so it wins: " + ", ".join(clash))
 		if dashboard:
-			add("ok", "windows.dashboard_sets", "look options hypr-dashboard sets (keeping them in Lacquer has no effect): " + ", ".join(dashboard))
+			move = "`Move to Lacquer` in hypr-dashboard's Options page hands them over"
+			add("warn", "windows.dashboard_sets", f"look options hypr-dashboard still sets (keeping them in Lacquer has no effect; {move}): " + ", ".join(dashboard))
 		for key, why in self._overridden(section).items():
 			add("warn", "windows.overridden", f"windows.{key}: {why}")
 		return out

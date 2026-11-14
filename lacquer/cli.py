@@ -41,6 +41,8 @@ def _parser():
 	add("keep", "save the running preview")
 	add("revert", "drop the running preview").add_argument("--force", action="store_true", help="revert even with no preview on record")
 	add("unset", "stop keeping keys").add_argument("keys", nargs="+")
+	add("adopt", "start keeping keys at their live value (for a tool handing them over)").add_argument("keys", nargs="+")
+	add("owned", "what Lacquer is the one writer of in other programs' config")
 	add("status", "running preview and timer")
 	add("apply", "preview a whole theme (name or file)", (common, timed)).add_argument("theme")
 	add("doctor", "check the setup and list overlaps with other config")
@@ -76,6 +78,10 @@ def _run(args):
 		return core.revert(args.force)
 	if c == "unset":
 		return core.unset(args.keys)
+	if c == "adopt":
+		return core.adopt(args.keys)
+	if c == "owned":
+		return core.owned()
 	if c == "status":
 		return core.status()
 	if c == "apply":

@@ -173,6 +173,9 @@ class Motion(Module):
 		# drops what other tools set at runtime).
 		self.preview(changes)
 
+	def owns(self):
+		return {"hyprland": {"animations": {leaf: f"{self.name}.{leaf}" for leaf in LEAVES}}}
+
 	def doctor(self, section):
 		out = []
 		if not section:

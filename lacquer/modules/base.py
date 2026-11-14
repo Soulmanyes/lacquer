@@ -68,6 +68,13 @@ class Module:
 		Only called with no preview running. Returns a list of what it did."""
 		return []
 
+	def owns(self):
+		"""What this module is the one writer of in other programs' config,
+		for tools that edit the same config (hypr-dashboard reads it through
+		`lacquer owned`): {program: {kind: {their name: full Lacquer key}}},
+		or a list of file paths as a kind's value."""
+		return {}
+
 	def doctor(self, section):
 		"""Returns findings: [{"level": "ok"|"warn"|"error", "check", "detail"}]."""
 		return []

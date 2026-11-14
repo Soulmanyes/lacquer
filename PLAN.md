@@ -2,8 +2,8 @@
 
 Desktop look customiser for Hyprland (and Noctalia when present). Sibling of
 Shellac, but Lacquer never styles terminals or individual apps: it covers
-"everything else". Private repo until it works; standalone now, may merge into
-hypr-dashboard later.
+"everything else". Private repo until it works; standalone, not merged into
+hypr-dashboard (see "Saved Hyprland file").
 
 ## Decisions (owner, 2026-11-13)
 
@@ -100,9 +100,13 @@ Adding an area = adding one module file. No other code changes.
 `apply_theme()` so Lacquer border colors win in `lacquer` palette mode, and
 before `dashboard_options`.
 
-**Known issue until merge:** hypr-dashboard's `dashboard_options` loads later,
-so any look option it also sets (gaps, rounding, ...) overrides Lacquer
-silently. Phase 1 has `lacquer doctor` list those overlaps.
+**No merge (owner, 2026-11-14): one writer per setting.** hypr-dashboard's
+`dashboard_options` loads later, so a look option it also sets overrides
+Lacquer. `lacquer doctor` lists those; hypr-dashboard (from the version with
+`owners.py`) reads `lacquer owned`, shows Lacquer's options, motion leaves and
+`lacquer*.lua` calls read-only with "Open in Lacquer", and its "Move to
+Lacquer" banner runs `lacquer adopt` and then drops its own copy (rolled back
+if a value would change).
 
 ### Files
 
