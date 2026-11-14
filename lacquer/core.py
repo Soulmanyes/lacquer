@@ -10,7 +10,7 @@ import os
 import shutil
 import time
 
-from . import lock, paths, state, tomlio
+from . import __version__, lock, paths, state, tomlio, updater
 from .modules import discover
 from .values import Invalid, LacquerError, same
 
@@ -26,6 +26,7 @@ StartupWMClass={paths.APP_ID}
 """
 
 _modules = None
+_updates = None
 
 
 def modules():
@@ -484,6 +485,55 @@ def sync():
 	for module in modules().values():
 		done += module.sync()
 	return {"synced": done}
+
+
+def updates():
+	"""The update checker (`updater.Updater`). The window uses it directly,
+	on its own threads: a GitHub call can take seconds."""
+	global _updates
+	if _updates is None:
+		_updates = updater.Updater(paths.GITHUB, __version__, paths.REPO, paths.UPDATES)
+	return _updates
+
+
+def _update_error(e):
+	if isinstance(e, RuntimeError):
+		return LacquerError(str(e))
+	return LacquerError(f"could not reach GitHub: {e}")
+
+
+def update_check(force=True):
+	"""Is there a newer release? Asks GitHub (at most once a day unless forced)."""
+	up = updates()
+	try:
+		latest = up.check(force)
+	except (OSError, ValueError, KeyError) as e:
+		raise _update_error(e) from e
+	out = {"version": __version__, "latest": latest["tag"] if latest else None, "auto": up.auto, "dev_checkout": up.dev_checkout}
+	if latest:
+		out["url"] = latest["url"]
+		out["installed"] = up.installed(latest)
+	return out
+
+
+def update_install():
+	"""Installs the newest release over this copy (never over a git checkout).
+	The running window and CLI keep the old code until they start again."""
+	up = updates()
+	try:
+		latest = up.check(True)
+		if not latest:
+			return {"version": __version__, "installed": None}
+		up.install(latest)
+	except (OSError, ValueError, KeyError, RuntimeError) as e:
+		raise _update_error(e) from e
+	return {"version": __version__, "installed": latest["tag"]}
+
+
+def update_auto(on):
+	"""Should the window install a new release by itself when it opens?"""
+	updates().auto = on
+	return {"auto": updates().auto}
 
 
 def doctor():

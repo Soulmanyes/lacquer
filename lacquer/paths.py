@@ -12,6 +12,8 @@ SETTINGS = os.path.join(CONFIG, "config.toml")
 THEMES = os.path.join(CONFIG, "themes")
 SNAPSHOTS = os.path.join(STATE, "snapshots")
 PREVIEW = os.path.join(RUNTIME, "preview.json")
+UPDATES = os.path.join(CONFIG, "updates.json")
+GITHUB = "Soulmanyes/lacquer"
 
 REPO = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 LAUNCHER = os.path.join(REPO, "bin", "lacquer")

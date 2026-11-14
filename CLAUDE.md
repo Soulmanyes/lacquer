@@ -138,6 +138,16 @@ Rules:
   `modules/palette.py`). Every core call that changes things carries
   `@lock.exclusive` (`lock.py`): one at a time across the CLI, the window,
   the timer and hooks. Give a new changing core call the same decorator.
+- Install and updates: `install.sh` copies the app to
+  `~/.local/share/lacquer`, links `~/.local/bin/lacquer` to it and runs
+  `lacquer install` (also run through `curl | sh`, and by every in-app
+  update). `lacquer/updater.py` is hypr-dashboard's updater unchanged except
+  for tabs: fix a bug in both. `core.updates()` is the one `Updater`;
+  `core.update_check/install/auto` are the CLI's calls (`lacquer update`),
+  `gui/updatemenu.py` is the header button, banner and "What's new" window.
+  A copy with `.git` next to it never installs an update. Release notes are
+  the "What's new" text, so write them for users. Test the installer in a
+  temp `HOME` with a stub `hyprctl` on `PATH`, never on the live setup.
 - Module keys are relative (`decoration.rounding`); the section name is added
   by core (`windows.decoration.rounding`).
 - Hyprland facts that shaped the code are in `PLAN.md` ("Facts probed").

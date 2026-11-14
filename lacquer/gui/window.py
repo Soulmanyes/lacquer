@@ -14,6 +14,7 @@ from . import pages
 from .search import Search
 from .sectionpage import SectionPage
 from .thememenu import ThemeMenu
+from .updatemenu import UpdateMenu
 from .worker import Worker
 
 # A test launch gets its own id, so it never raises the owner's open window.
@@ -69,7 +70,10 @@ class Window(Adw.ApplicationWindow):
 		header.pack_start(ThemeMenu(self))
 		self.search = Search(self)
 		header.pack_end(self.search)
+		updates = UpdateMenu(self)
+		header.pack_end(updates)
 		view.add_top_bar(header)
+		view.add_top_bar(updates.banner)
 		view.add_bottom_bar(self._preview_bar())
 		self.set_content(view)
 

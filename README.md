@@ -39,16 +39,37 @@ A section whose program is not installed hides itself. `lacquer status` lists th
 ## Install
 
 ```sh
-git clone https://github.com/Soulmanyes/lacquer.git
-cd lacquer
-bin/lacquer install
+curl -fsSL https://raw.githubusercontent.com/Soulmanyes/lacquer/master/install.sh | sh
 ```
 
-`lacquer install` links `lacquer` into `~/.local/bin`, adds a launcher entry, adds one `require`
-line to `hyprland.lua` (a dated backup is made first, and the file is restored if Hyprland reports
-config errors) and binds the revert key. Run `lacquer doctor` after it to check the setup.
+This copies the latest release to `~/.local/share/lacquer`, links `lacquer` into `~/.local/bin` and
+runs `lacquer install`. That adds a launcher entry, adds `require` lines for Lacquer's own files to
+`hyprland.lua` (a dated backup is made first, and the file is restored if Hyprland reports config
+errors) and binds the revert key. Run it inside a Hyprland session, then `lacquer doctor` to check
+the setup.
 
-To update, run `git pull` in the checkout.
+From a clone, `sh install.sh` installs that copy the same way. To run straight from a clone instead
+(for working on the code), use `bin/lacquer install`; that copy updates with `git pull` only.
+
+### Updates
+
+The window checks GitHub once a day and shows a banner when a newer release is out. The menu button
+in the header has the version, "Check now" and a switch to install updates automatically (off by
+default). From a terminal: `lacquer update` checks, `lacquer update install` installs. An update
+replaces the app only; your look in `~/.config/lacquer` stays. The update check is the only
+connection Lacquer makes.
+
+### Uninstall
+
+```sh
+sh ~/.local/share/lacquer/install.sh --uninstall
+```
+
+This removes the app, the launcher entry and the `lacquer` link. Your look stays in
+`~/.config/lacquer`. To remove what Lacquer added to your config: delete the
+`require("config.lacquer...")` lines (and the comment above each) from `~/.config/hypr/hyprland.lua`,
+delete `~/.config/hypr/config/lacquer*.lua`, and with Noctalia remove the `lacquer sync` entry from
+its dark/light hook.
 
 ## Use
 

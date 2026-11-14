@@ -58,6 +58,10 @@ def _parser():
 	snap.add_parser("list", parents=[common])
 	restore = snap.add_parser("restore", parents=[common, timed])
 	restore.add_argument("name")
+	update = add("update", "check GitHub for a newer release, or install it").add_subparsers(dest="action")
+	update.add_parser("check", parents=[common])
+	update.add_parser("install", parents=[common])
+	update.add_parser("auto", parents=[common], help="let the window install new releases by itself").add_argument("switch", choices=["on", "off"])
 	return p
 
 
@@ -96,6 +100,12 @@ def _run(args):
 		if args.action == "list":
 			return core.theme_list()
 		return (core.theme_save if args.action == "save" else core.theme_delete)(args.name)
+	if c == "update":
+		if args.action == "install":
+			return core.update_install()
+		if args.action == "auto":
+			return core.update_auto(args.switch == "on")
+		return core.update_check()
 	if args.action == "list":
 		return core.snapshot_list()
 	return core.snapshot_restore(args.name, args.keep)

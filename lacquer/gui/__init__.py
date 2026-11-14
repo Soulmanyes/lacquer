@@ -5,6 +5,7 @@ through `lacquer.core`, the same calls the CLI makes.
   sectionpage.py  the page every section gets, built from its schema
   pages/          one file per page that needs more than that
   window.py       the window: preview queue, Keep/Revert bar, timer
+  updatemenu.py   version and updates button, banner, "What's new"
   worker.py       the one thread core calls run on
 """
 import gi
