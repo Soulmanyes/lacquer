@@ -375,15 +375,28 @@ def theme_list():
 	return {"themes": _names(paths.THEMES)}
 
 
-def theme_save(name):
+def _theme_path(name):
 	if not name or "/" in name or name.startswith("."):
 		raise Invalid(f"bad theme name {name!r}")
+	return os.path.join(paths.THEMES, f"{name}.toml")
+
+
+def theme_save(name):
+	path = _theme_path(name)
 	if not os.path.isfile(paths.CURRENT):
 		raise LacquerError("nothing kept yet, so there is no look to save")
 	os.makedirs(paths.THEMES, exist_ok=True)
-	path = os.path.join(paths.THEMES, f"{name}.toml")
 	shutil.copy2(paths.CURRENT, path)
 	return {"saved": path}
+
+
+def theme_delete(name):
+	"""Removes a saved theme for good. The kept look and the snapshots stay."""
+	path = _theme_path(name)
+	if not os.path.isfile(path):
+		raise LacquerError(f"no theme '{name}'")
+	os.remove(path)
+	return {"deleted": path}
 
 
 def snapshot_list():

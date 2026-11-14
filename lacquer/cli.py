@@ -50,6 +50,7 @@ def _parser():
 	theme = add("theme", "saved themes").add_subparsers(dest="action", required=True)
 	theme.add_parser("list", parents=[common])
 	theme.add_parser("save", parents=[common]).add_argument("name")
+	theme.add_parser("delete", parents=[common]).add_argument("name")
 	snap = add("snapshot", "automatic copies of every kept look").add_subparsers(dest="action", required=True)
 	snap.add_parser("list", parents=[common])
 	restore = snap.add_parser("restore", parents=[common, timed])
@@ -83,7 +84,9 @@ def _run(args):
 	if c == "install":
 		return core.install()
 	if c == "theme":
-		return core.theme_list() if args.action == "list" else core.theme_save(args.name)
+		if args.action == "list":
+			return core.theme_list()
+		return (core.theme_save if args.action == "save" else core.theme_delete)(args.name)
 	if args.action == "list":
 		return core.snapshot_list()
 	return core.snapshot_restore(args.name, args.keep)

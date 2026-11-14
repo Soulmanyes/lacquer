@@ -263,7 +263,13 @@ instead of editing configs by hand.
     (`decoration.blur.water.*`, ...) show only while `decoration.blur.variant`
     is that variant; `glass.*` shows for frost, drops, prism, heat_shimmer
     and aurora, which all read it.
-  - Not in it: deleting a theme, `doctor` findings.
+  - Deleting a theme (2026-11-14): `lacquer theme delete <name>`, and a bin
+    button on the Themes page that asks first (no undo; snapshots can not be
+    deleted). Health page: the `doctor` findings, problems first, read at
+    start, after every keep or revert and on "Check again"; the sidebar
+    shows the count ("Health (2)"). Tested by code on the real window and by
+    screenshot with made-up findings; the delete question itself was not
+    seen (it did not draw on workspace 77).
 - The Noctalia community template `papirus-icons` is off since 2026-11-14
   (it set an icon theme that is not installed on every template run).
   Turning the last community template with GTK parts off makes Noctalia

@@ -75,7 +75,7 @@ Rules:
   live: `lacquer revert --force` puts it back.
 - The owner's blind revert key is Super+Backspace (bound in `lacquer.lua`).
 - `lacquer apply <theme>` previews a whole theme; a section in the theme
-  replaces that whole section. `lacquer theme save <name>` stores the kept look.
+  replaces that whole section. `lacquer theme save <name>` stores the kept look, `lacquer theme delete <name>` removes a theme.
   Every keep also writes a snapshot (`lacquer snapshot list|restore`).
 
 ## Code

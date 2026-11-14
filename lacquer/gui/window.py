@@ -1,8 +1,8 @@
 """The window: a page per section, the preview queue and the Keep/Revert bar.
 
-Pages talk to the window through six calls: change(key, value),
-unset(key), run(fn, *args, then=), previewed(result), refresh_pages() and
-toast(text).
+Pages talk to the window through seven calls: change(key, value),
+unset(key), run(fn, *args, then=), previewed(result), refresh_pages(),
+toast(text) and retitle(page, title).
 """
 import os
 import sys
@@ -116,6 +116,10 @@ class Window(Adw.ApplicationWindow):
 
 	def toast(self, text):
 		self.toasts.add_toast(Adw.Toast(title=text, timeout=6))
+
+	def retitle(self, page, title):
+		"""Changes a page's name in the sidebar (to show a count, say)."""
+		self.stack.get_page(page).set_title(title)
 
 	def change(self, key, value):
 		"""A setting was changed by hand: preview it (after a short pause, so
