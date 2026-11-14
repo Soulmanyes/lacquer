@@ -57,6 +57,8 @@ def _role(key):
 
 class Fonts(places.Placed):
 	name = "fonts"
+	title = "Fonts"
+	order = 80
 
 	def detect(self):
 		return gsettings.available()
@@ -64,7 +66,7 @@ class Fonts(places.Placed):
 	def schema(self):
 		out = {}
 		for role, (description, *_) in ROLES.items():
-			out[role] = Key(name=role, type="str", description=f"{description}: family, may end in a style (Bold, Italic)")
+			out[role] = Key(name=role, type="str", description=f"{description}: family, may end in a style (Bold, Italic)", hint="font")
 			out[f"{role}_size"] = Key(name=f"{role}_size", type="int", min=1, max=200, description=f"{description}: size in points")
 		return out
 

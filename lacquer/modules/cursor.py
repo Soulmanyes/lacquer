@@ -26,6 +26,8 @@ HEADER = """\
 
 class Cursor(places.Placed):
 	name = "cursor"
+	title = "Cursor"
+	order = 70
 
 	def detect(self):
 		return hypr.running() and gsettings.available()

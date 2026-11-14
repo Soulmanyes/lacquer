@@ -5,6 +5,7 @@ a message for the user. Keys are `<section>.<module key>`, for example
 `windows.decoration.rounding`.
 """
 import difflib
+import importlib.util
 import os
 import shutil
 import time
@@ -14,6 +15,15 @@ from .modules import discover
 from .values import Invalid, LacquerError
 
 MIN_TIMEOUT, MAX_TIMEOUT, DEFAULT_TIMEOUT = 5, 120, 15
+DESKTOP_ENTRY = f"""[Desktop Entry]
+Type=Application
+Name=Lacquer
+Comment=Desktop look customiser
+Exec={paths.LAUNCHER} gui
+Icon=preferences-desktop-theme
+Categories=Settings;DesktopSettings;
+StartupWMClass={paths.APP_ID}
+"""
 
 _modules = None
 
@@ -102,6 +112,13 @@ def _write_current(theme):
 
 
 # -- reading --
+
+def sections():
+	"""The usable sections in display order, with what a front-end needs to
+	lay them out: {name: {"title", "common"}}."""
+	ordered = sorted(modules().values(), key=lambda m: (m.order, m.name))
+	return {m.name: {"title": m.title or m.name.capitalize(), "common": list(m.common)} for m in ordered}
+
 
 def schema(prefix=""):
 	return {
@@ -308,6 +325,10 @@ def install():
 		os.makedirs(os.path.dirname(paths.USER_BIN), exist_ok=True)
 		os.symlink(paths.LAUNCHER, paths.USER_BIN)
 		done.append(f"linked {paths.USER_BIN}")
+	# The window needs PyGObject; without it there is nothing to launch.
+	if importlib.util.find_spec("gi") and paths.read_text(paths.DESKTOP) != DESKTOP_ENTRY:
+		paths.atomic_write(paths.DESKTOP, DESKTOP_ENTRY)
+		done.append(f"wrote {paths.DESKTOP}")
 	theme = tomlio.load(paths.CURRENT)
 	for module in modules().values():
 		done += module.install(_saved(theme, module))

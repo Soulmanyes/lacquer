@@ -28,6 +28,8 @@ class Key:
 	max: object = None
 	choices: dict | None = None
 	description: str = ""
+	# What the value is, for front-ends that offer a picker: "image", "font".
+	hint: str = ""
 
 	def public(self):
 		return {k: v for k, v in asdict(self).items() if k != "name" and v is not None and v != ""}

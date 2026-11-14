@@ -45,6 +45,7 @@ def _parser():
 	add("apply", "preview a whole theme (name or file)", (common, timed)).add_argument("theme")
 	add("doctor", "check the setup and list overlaps with other config")
 	add("install", "hook Lacquer into the system (config require, revert key, PATH)")
+	add("gui", "open the window", ()).add_argument("page", nargs="?", help="section to open on, for example windows")
 
 	theme = add("theme", "saved themes").add_subparsers(dest="action", required=True)
 	theme.add_parser("list", parents=[common])
@@ -94,6 +95,10 @@ def main(argv=None):
 		_timer(argv[1], int(argv[2]))
 		return 0
 	args = _parser().parse_args(argv)
+	if args.command == "gui":
+		# Imported here: the CLI must work without GTK.
+		from . import gui
+		return gui.run(args.page)
 	try:
 		result, code = _run(args), 0
 	except LacquerError as e:

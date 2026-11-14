@@ -25,6 +25,8 @@ def _outputs():
 
 class Wallpaper(ConfigModule):
 	name = "wallpaper"
+	title = "Wallpaper"
+	order = 50
 	table = "wallpaper"
 
 	def wanted(self, key):
@@ -34,7 +36,7 @@ class Wallpaper(ConfigModule):
 		return ["default"] + [f"monitors.{o}" for o in _outputs()]
 
 	def config_schema(self):
-		images = {k: Key(name=k, type="str", description="image file") for k in self._images()}
+		images = {k: Key(name=k, type="str", description="image file", hint="image") for k in self._images()}
 		return {**images, **super().config_schema()}
 
 	def validate(self, key, value):

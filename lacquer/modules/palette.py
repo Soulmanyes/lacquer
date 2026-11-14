@@ -83,6 +83,8 @@ def palette_of(held):
 
 class Palette(places.Placed):
 	name = "palette"
+	title = "Palette"
+	order = 10
 
 	def __init__(self):
 		self._schema = None

@@ -81,8 +81,17 @@ Rules:
 ## Code
 
 - Python, tabs, no dependencies outside the standard library.
-- `lacquer/core.py` is the only thing front-ends call (CLI now, GTK GUI in
-  phase 5). It returns plain dicts and raises `LacquerError`.
+- `lacquer/core.py` is the only thing front-ends call (`cli.py` and the GTK
+  window in `lacquer/gui/`). It returns plain dicts and raises `LacquerError`.
+- The window (`lacquer gui [page]`, launcher entry from `lacquer install`)
+  builds every section's page from `core.schema()` and `core.sections()`. A
+  new area needs no GUI code: give the module `title`, `order` and `common`
+  (the keys shown before "Show all settings"; fnmatch patterns). A new value
+  type is one class in `gui/rows.py` (`BY_TYPE`); a picker for a `Key.hint`
+  (`image`, `font`) is one class in `BY_HINT`; a page that needs more than
+  the generic one is one file in `gui/pages/` (see its `__init__.py`). Every
+  core call from the window goes through `gui/worker.py` (one thread), except
+  `core.status()` in the one-second poll.
 - One area = one file in `lacquer/modules/` exposing `MODULE` (see `base.py`
   for the interface). `core.py` and `cli.py` must not need a change for a new
   area. Value types shared by modules live in `values.py`.
@@ -110,7 +119,14 @@ Rules:
 
 ## Testing
 
-- `python -m py_compile lacquer/*.py lacquer/modules/*.py`, `ruff check .`
+- `python -m py_compile lacquer/*.py lacquer/modules/*.py lacquer/gui/*.py lacquer/gui/pages/*.py`, `ruff check .`
+- Window tests: launch with `LACQUER_APP_ID=dev.lacquer.Test lacquer gui
+  <page>` through `ui-shot` (a wrapper script, so stderr lands in a file). A
+  window on workspace 77 redraws rarely: wait about 10 s (or shoot twice)
+  before trusting a screenshot. Clicks are not possible there, so drive the
+  flows by code: a script that makes `gui.window.App`, changes
+  `page.rows[key].widget` on GLib timeouts and prints `core.status()` (risky
+  timer, revert, the clamp path, keep, unset; same safe keys as below).
 - Live tests change the owner's real desktop. Use values equal to the current
   ones, or small ones, and always end with `lacquer revert` / `lacquer unset`,
   then `lacquer status` (no preview) and `hyprctl configerrors` (empty).

@@ -16,6 +16,10 @@ PREVIEW = os.path.join(RUNTIME, "preview.json")
 REPO = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 LAUNCHER = os.path.join(REPO, "bin", "lacquer")
 USER_BIN = os.path.join(HOME, ".local", "bin", "lacquer")
+# The window's app id; the launcher entry carries the same name so the
+# compositor matches the window to it.
+APP_ID = "dev.lacquer.Lacquer"
+DESKTOP = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share"), "applications", f"{APP_ID}.desktop")
 
 
 def atomic_write(path, text):

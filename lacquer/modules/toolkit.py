@@ -22,6 +22,8 @@ def _usable(place):
 
 class Toolkit(places.Placed):
 	name = "toolkit"
+	title = "Apps (GTK and Qt)"
+	order = 60
 
 	def __init__(self):
 		self._schema = None

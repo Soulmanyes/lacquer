@@ -1,0 +1,287 @@
+"""The window: a page per section, the preview queue and the Keep/Revert bar.
+
+Pages talk to the window through five calls: change(key, value),
+unset(key), run(fn, *args, then=), previewed(result) and toast(text).
+"""
+import os
+import sys
+
+from gi.repository import Adw, Gdk, GLib, Gtk
+
+from .. import core, paths
+from . import pages
+from .sectionpage import SectionPage
+from .worker import Worker
+
+# A test launch gets its own id, so it never raises the owner's open window.
+APP_ID = os.environ.get("LACQUER_APP_ID") or paths.APP_ID
+SEND_DELAY_MS = 250  # a dragged slider sends its last value, not every step
+CSS = """
+list.boxed-list, .card { border: 1px solid alpha(currentColor, 0.25); }
+.lacquer-mark {
+	background: alpha(@accent_bg_color, 0.3);
+	border: 1px solid @accent_bg_color;
+	border-radius: 999px;
+	padding: 1px 8px;
+	font-size: smaller;
+}
+.lacquer-swatches { padding: 12px; }
+.lacquer-swatch { padding: 4px; }
+.lacquer-bar {
+	background: alpha(@accent_bg_color, 0.18);
+	border-top: 2px solid @accent_bg_color;
+	padding: 8px 12px;
+}
+.lacquer-bar .timer { color: @warning_color; font-weight: bold; }
+"""
+
+
+class Window(Adw.ApplicationWindow):
+	def __init__(self, app, page=None):
+		super().__init__(application=app, title="Lacquer", default_width=980, default_height=760)
+		self.first_page = page
+		self.worker = Worker()
+		self.section_pages = {}
+		self.extra_pages = []
+		self.pending = {}  # changes waiting to be sent: {key: value}
+		self.sending = False
+		self.send_timer = 0
+		self.preview_keys = set()
+		self.closing = False
+
+		self.stack = Gtk.Stack(hexpand=True, transition_type=Gtk.StackTransitionType.CROSSFADE)
+		self.stack.add_named(Adw.StatusPage(title="Reading the current look…"), "loading")
+		sidebar = Gtk.StackSidebar(stack=self.stack, width_request=190)
+		body = Gtk.Box()
+		body.append(sidebar)
+		body.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+		body.append(self.stack)
+		self.toasts = Adw.ToastOverlay(child=body)
+
+		view = Adw.ToolbarView(content=self.toasts)
+		view.add_top_bar(Adw.HeaderBar())
+		view.add_bottom_bar(self._preview_bar())
+		self.set_content(view)
+
+		self.connect("close-request", self._close_request)
+		self.worker.call(lambda: (core.sections(), core.schema(), core.get()), done=self._build)
+
+	# -- building --
+
+	def _preview_bar(self):
+		self.bar_text = Gtk.Label(xalign=0, hexpand=True)
+		self.bar_timer = Gtk.Label(css_classes=["timer"])
+		revert = Gtk.Button(label="Revert")
+		revert.connect("clicked", lambda *_: self.revert())
+		keep = Gtk.Button(label="Keep", css_classes=["suggested-action"])
+		keep.connect("clicked", lambda *_: self.keep())
+		box = Gtk.Box(spacing=12, css_classes=["lacquer-bar"])
+		for widget in (self.bar_text, self.bar_timer, revert, keep):
+			box.append(widget)
+		self.bar = Gtk.Revealer(child=box, reveal_child=False)
+		return self.bar
+
+	def _build(self, result, error):
+		if error:
+			self.stack.get_child_by_name("loading").set_description(error)
+			return
+		sections, schema, values = result
+		custom, extra = pages.discover()
+		for name, info in sections.items():
+			part = {k: v for k, v in schema.items() if k.startswith(name + ".")}
+			page = custom.get(name, SectionPage)(self, name, info, part)
+			self.section_pages[name] = page
+			self.stack.add_titled(page, name, info["title"])
+		for module in extra:
+			page = module.Page(self)
+			self.extra_pages.append(page)
+			self.stack.add_titled(page, module.__name__.rsplit(".", 1)[-1], module.TITLE)
+		self.stack.remove(self.stack.get_child_by_name("loading"))
+		first = self.first_page if self.first_page and self.stack.get_child_by_name(self.first_page) else next(iter(self.section_pages), None)
+		if first:
+			self.stack.set_visible_child_name(first)
+		self._show(values)
+		self._poll()
+		GLib.timeout_add_seconds(1, self._poll)
+
+	# -- for pages --
+
+	def toast(self, text):
+		self.toasts.add_toast(Adw.Toast(title=text, timeout=6))
+
+	def change(self, key, value):
+		"""A setting was changed by hand: preview it (after a short pause, so
+		a run of changes is sent once)."""
+		self.pending[key] = value
+		if self.send_timer:
+			GLib.source_remove(self.send_timer)
+		self.send_timer = GLib.timeout_add(SEND_DELAY_MS, self._send)
+
+	def unset(self, key):
+		self.run(core.unset, [key], then=lambda _result: self.reload())
+
+	def run(self, fn, *args, then=None):
+		"""Runs a core call off the GTK thread. An error is shown and the
+		pages are read again; otherwise then(result) runs."""
+		def done(result, error):
+			if error:
+				self.toast(error)
+				self.reload()
+			elif then:
+				then(result)
+		self.worker.call(fn, *args, done=done)
+
+	def previewed(self, result):
+		"""After any core call that started or changed a preview."""
+		for key in result.get("previewed", {}):
+			self._row_preview(key, True)
+		if result.get("risky"):
+			reasons = "; ".join(f"{k}: {why}" for k, why in result["risky"].items())
+			self.toast(f"Risky ({reasons}). Reverts in {result['auto_revert_in']} s unless you keep it.")
+		if result.get("skipped_sections"):
+			self.toast("Not usable here, skipped: " + ", ".join(result["skipped_sections"]))
+		# A change can move other values too (one wallpaper for all monitors,
+		# a seed for the whole palette), so read the touched sections again.
+		self.reload({key.split(".", 1)[0] for key in result.get("previewed", {})})
+		self._poll()
+
+	# -- preview queue --
+
+	def _send(self):
+		self.send_timer = 0
+		if self.sending or not self.pending:
+			return False
+		pairs, self.pending = list(self.pending.items()), {}
+		self.sending = True
+		self.worker.call(core.set_values, pairs, done=self._sent)
+		return False
+
+	def _sent(self, result, error):
+		self.sending = False
+		if error:
+			# core reverted the whole preview (or refused the value).
+			self.pending.clear()
+			self.toast(error)
+			self.reload()
+			self._poll()
+			return
+		self.previewed(result)
+		self._send()
+
+	# -- keep / revert --
+
+	def keep(self, then=None):
+		def kept(result):
+			warnings = result.get("warnings", [])
+			if warnings:
+				dialog = Adw.AlertDialog(heading="Kept, with warnings", body="\n\n".join(warnings))
+				dialog.add_response("ok", "OK")
+				dialog.present(self)
+			elif result.get("kept"):
+				self.toast("Kept")
+			self._after_end(then)
+		self.run(core.keep, then=kept)
+
+	def revert(self, then=None):
+		self.pending.clear()
+		self.run(core.revert, then=lambda _result: self._after_end(then))
+
+	def _after_end(self, then):
+		if then:
+			then()
+			return
+		self.reload()
+		for page in self.extra_pages:
+			page.refresh()
+		self._poll()
+
+	# -- reading --
+
+	def reload(self, sections=None):
+		"""Reads live values again (all sections, or the named ones)."""
+		names = list(self.section_pages) if sections is None else [s for s in sections if s in self.section_pages]
+
+		def read():
+			values = {}
+			for name in names:
+				values.update(core.get(name + "."))
+			return values
+
+		def done(values, error):
+			if error:
+				self.toast(error)
+			# Newer changes are on their way: their own reload follows.
+			elif not self.pending and not self.sending:
+				self._show(values)
+		self.worker.call(read, done=done)
+
+	def _show(self, values):
+		for page in self.section_pages.values():
+			page.load(values)
+
+	def _row_preview(self, key, flag):
+		page = self.section_pages.get(key.split(".", 1)[0])
+		if page and key in page.rows:
+			page.rows[key].set_preview(flag)
+
+	def _poll(self):
+		"""Once a second: the bar, the timer, and previews that ended or
+		started outside the window (timer, revert key, CLI)."""
+		status = core.status()
+		keys, left = set(status["preview"]), status["auto_revert_in"]
+		count = len(keys)
+		self.bar_text.set_label(f"{count} change{'s' if count != 1 else ''} in preview, not kept yet")
+		self.bar_timer.set_label(f"Reverts in {left} s" if left is not None else "")
+		self.bar.set_reveal_child(bool(keys))
+		if keys != self.preview_keys:
+			idle = not self.worker.busy and not self.pending and not self.sending
+			self.preview_keys = keys
+			if idle:
+				self.reload()
+		return True
+
+	# -- closing --
+
+	def _close_request(self, *_):
+		if self.closing or not (self.preview_keys or self.pending or self.sending):
+			return False
+		dialog = Adw.AlertDialog(heading="A preview is still running", body="Keep the previewed look, or revert it?")
+		dialog.add_response("cancel", "Cancel")
+		dialog.add_response("revert", "Revert")
+		dialog.add_response("keep", "Keep")
+		dialog.set_response_appearance("keep", Adw.ResponseAppearance.SUGGESTED)
+		dialog.set_close_response("cancel")
+		dialog.connect("response", self._close_answer)
+		dialog.present(self)
+		return True
+
+	def _close_answer(self, _dialog, response):
+		if response == "cancel":
+			return
+		self.closing = True
+		(self.keep if response == "keep" else self.revert)(then=self.close)
+
+
+class App(Adw.Application):
+	def __init__(self, page=None):
+		super().__init__(application_id=APP_ID)
+		self.window = None
+		self.page = page
+
+	def do_activate(self):
+		if self.window is None:
+			provider = Gtk.CssProvider()
+			provider.load_from_string(CSS)
+			Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+			self.window = Window(self, self.page)
+		self.window.present()
+
+	def do_shutdown(self):
+		if self.window is not None:
+			self.window.worker.stop()
+		Adw.Application.do_shutdown(self)
+
+
+def run(page=None):
+	"""Opens the window, on the named section's page if given."""
+	return App(page).run([sys.argv[0]])

@@ -238,6 +238,30 @@ instead of editing configs by hand.
     Lacquer's targets (Hyprland, GTK, Qt, KDE keep the old mode's colors until
     the next `lacquer set palette...`).
 
+- **Phase 5 done (2026-11-14), not used by the owner yet.** `lacquer gui
+  [page]` opens a GTK4/libadwaita window (launcher entry "Lacquer" from
+  `lacquer install`). Owner's choice: every section gets a page; the keys a
+  module lists as `common` show first, the rest with "Show all settings".
+  - Pages are built from `core.schema()`; rows by value type
+    (`gui/rows.py`), with pickers for `Key.hint` `image` and `font`.
+  - Palette page: engine, mode, seed (color, wallpaper or image), base, and
+    the palette as swatches. Themes page: save, preview a theme or snapshot.
+  - A change previews after 250 ms. The bar at the bottom shows the count,
+    the risky countdown, Revert and Keep. A row shows a `preview` pill and,
+    when Lacquer keeps the key, an undo arrow (`unset`). A preview that ends
+    outside the window (timer, Super+Backspace, CLI) is noticed within a
+    second. Closing with a preview running asks Keep / Revert / Cancel.
+  - Tested by code on the real window (risky timer, revert, clamp error,
+    timer expiry, keep, unset) and by screenshot (palette, windows, themes).
+    Not tested: real mouse clicks, the color/font/file dialogs, the
+    close dialog, bar/shell/wallpaper/fonts pages by eye.
+  - Not in it: deleting a theme, search, `doctor` findings.
+- The Noctalia community template `papirus-icons` is off since 2026-11-14
+  (it set an icon theme that is not installed on every template run).
+  Turning the last community template with GTK parts off makes Noctalia
+  delete `noctalia-extensions.css`; `lacquer.css` then imports a missing file
+  until the next palette write (any `lacquer set palette...` fixes it).
+
 ## Open questions
 
 - Follow a dark/light switch made in Noctalia (hook or watcher) in `lacquer` mode.
